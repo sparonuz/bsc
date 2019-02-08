@@ -6,10 +6,10 @@ source /home/nct00/nct00004/bin/tools_x86_intel17.sh
 fnc2Keep=USR
 
 #discard if the time/visit time is less than
-time_visit=2000.0
+time_visit=10000.0
 
 #discard if the number of visits is greater than #N
-max_n_visit=100000
+max_n_visit=1000000
 
 #If this parameter is 0 show all the functions detected by scorep
 show_all=1
@@ -82,13 +82,12 @@ then
 
   n_lin_in=`wc -l < $file_name_txt_tmp`
   n_lin_out=`wc -l < $extrae_out_file`
-
-  if [ $n_lin_in -ne $n_lin_out ]
+  if [ $n_lin_in -gt $n_lin_out ]
   then
     echo -e "Not all function found in exe file ... check needed \nAborting"
   else
     echo -e "Found "$n_lin_in" functions to instrument. The output for extrae has been dumped to " $extrae_out_file "file. \nStop."
-#    rm $file_name_txt $file_name_txt_tmp
+    rm $file_name_txt $file_name_txt_tmp
   fi
 fi
 
