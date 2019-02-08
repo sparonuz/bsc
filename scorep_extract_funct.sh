@@ -50,7 +50,7 @@ file_name_txt_tmp=$file_name_txt'_tmp'
 scorep-score  -r $file_name > $file_name_txt
 
 #discard header 
-head_line=(`sed -n '/flt/=' $file_name.txt`)
+head_line=(`sed -n '/flt/=' $file_name_txt`)
 
 #print function that will be instrumented  plus some other counters 
 if [ $w_txt == 0 ] 
