@@ -73,8 +73,8 @@ then
   echo $file_name ": impi file not found"
 cat << EOF > impi.env
 module purge
-module load intel/20$TIME_STEP.3
-module load impi/20$TIME_STEP.3
+module load intel/2018.3
+module load impi/2018.3
 module load netcdf/4.2
 module load hdf5/1.8.19
 module load perl
