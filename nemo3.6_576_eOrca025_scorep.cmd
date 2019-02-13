@@ -3,38 +3,14 @@
 #                             RUN NEMO
 ###############################################################################
 #SBATCH --ntasks 576 
-#SBATCH --job-name ORCA02-576
-#SBATCH --output nemo3.6-eOrca025.o 
-#SBATCH --error  nemo3.6-eOrca025.e
+#SBATCH --job-name O025_N4_r10075
+#SBATCH --output nemo4-r10610_eOrca025_scorep.o 
+#SBATCH --error  nemo4-r10610_eOrca025_scorep.e
 ##SBATCH -R "span[ptile=16]"
-#SBATCH --time 50:00
+#SBATCH --time 20:00
 #SBATCH --qos=debug
 
 #cd $SLURM_SUBMIT_DIR
-
-#Create the new folder
-exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO3/run/Exp_nemo3_eOrca025_scorep
-
-exec_folder=/home/bsc32/bsc32402/local/Nemo/NEMOGCM/CONFIG/ORCA025_LIM3_scorep/EXP00/
-exec_name=opa
-
-xml_folder=/gpfs/scratch/bsc32/bsc32402/NEMO3/eORCA025/xml
-netCDF_folder=/gpfs/scratch/bsc32/bsc32402/NEMO3/eORCA025/input_files/
-
-namelist_folder=$netCDF_folder
-
-#extrae_wrapper=/gpfs/scratch/bsc32/bsc32402/Nemo4/Orca2-r10610/nemo_wrapper.sh
-#extrae_home=/gpfs/projects/bsc32/cs_collaboration/extrae-3.6.1-uf-fix
-#extrae_home=/gpfs/projects/bsc32/cs_collaboration/extrae-3.6.1-904d4f4/
-#extrae_xml=$exec_folder/detailed_trace_basic.xml
-
-#scorep_folder=/gpfs/scratch/bsc32/bsc32402/Nemo4/Orca2-r10610/scorep_nemo/
-#scorep_extr_script=/gpfs/scratch/bsc32/bsc32402/Nemo4/Orca2-r10610/scorep_extract_funct.sh
-
-#function_file=$exec_folder/extrae_functions_for_xml.txt
-#function_file=$exec_folder/functions_for_xml.txt
-
-impi_file=/gpfs/scratch/bsc32/bsc32402/Nemo4/Orca2-r10610/impi.env
 
 # Replace the number of resources used for NEMO and XIOS
 NEMO_PROC=576
@@ -42,24 +18,58 @@ XIOS_PROC=0
 TIME_STEP=12
 
 # Export extrae variable (for the wrapper to know if it is activated)
-#export EXTRAE=True
-export EXTRAE=False
-SCOREP=True
 XIOS=False
 
+exec_name=nemo
+exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_scorep/EXP00/
+
+#Create the new folder
+exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/prova/prova
+
+#Input files
+xml_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/eORCA025/xml/
+netCDF_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/eORCA025/input_files/
+namelist_folder=$netCDF_folder
+
+#extrae variables
+#export EXTRAE=False
+export EXTRAE=True
+if [[ $EXTRAE == True ]]
+then 
+  extrae_wrapper=/gpfs/scratch/bsc32/bsc32402/Nemo4/Orca2-r10610/nemo_wrapper.sh
+  extrae_home=/gpfs/projects/bsc32/cs_collaboration/extrae-3.6.1-uf-fix
+  extrae_xml=/gpfs/scratch/bsc32/bsc32402/NEMO4/Orca2-r10610/detailed_trace_basic.xml
+  function_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/Orca2-r10610/extrae_functions_for_xml.txt
+fi
+
+
+#SCOREP=True
+SCOREP=False
+if [[ $SCOREP == True ]]
+then
+  scorep_dir=scorep_nemo
+  source /home/nct00/nct00004/bin/tools_x86_intel17.sh
+  export SCOREP_EXPERIMENT_DIRECTORY=$scorep_dir
+fi
+
+#file that contains version of modules to load
+impi_file=/gpfs/scratch/bsc32/bsc32402/Nemo4/Orca2-r10610/impi.env
+
 #Create exp folder
-mkdir  $exp_folder
+mkdir  $exp_folder || exit 1
+
+#copy slurm file
 cp $0 $exp_folder
 cd $exp_folder
 
-#copy all the .xml files
+#copy all the input files or creates the ones that doesn't exist
 cp $xml_folder/*.xml . || exit 1
 cp $namelist_folder/namelist_* . || exit 1
 cp -s $netCDF_folder/*.nc . || exit 1
-cp $netCDF_folder/*.dat . 2> /dev/null ||echo "                               0  0.0000000000000000E+00  0.0000000000000000E+00" > EMPave_old.dat
+cp $netCDF_folder/*.dat . 2> /dev/null || echo "                               0  0.0000000000000000E+00  0.0000000000000000E+00" > EMPave_old.dat
 
 #rm context_nemo.xml
-#sed '/def_nemo-ice/d' $xml_folder/context_nemo.xml | sed '/def_nemo-pisces/d' > context_nemo.xml
+sed '/def_nemo-ice/d' $xml_folder/context_nemo.xml | sed '/def_nemo-pisces/d' > context_nemo.xml
 
 if ! [ -e "$impi_file"  ]
 then
@@ -100,16 +110,30 @@ else
 fi
 
 sed -ri 's/(.*)(using_server)(.*)(true|false)(.*)/\1\2\3'$XSERVER'\5/' iodef.xml
+
 # If extrae is used, create the function file for extrae.
 if [[ $EXTRAE == True ]]
 then
-  if ! [ -e "$function_file"  ]
-  then
-    $scorep_extr_script $scorep_folder/profile.cubex $exec_name
+  cp $extrae_xml . || exit 1
+  cp $function_file . || exit 1
+  final_function_file=$function_file'_final'
+  if [[ $(awk '{ print NF; exit}' $function_file) -eq 1 ]]
+  then 
+    nm $exec_name | grep -i " T " | grep -w -f $function_file | awk '{print $1" # "$3}' > $final_function_file
+  elif [[ $(awk '{ print NF; exit}' $function_file) -eq 3  ]]
+  then 
+    function_file_tmp=$function_file'_tmp'
+    awk '{print $3}' $function_file >  $function_file_tmp
+    nm $exec_name | grep -i " T " | grep -w -f $function_file_tmp | awk '{print $1" # "$3}' > $final_function_file
+    rm $function_file_tmp
   else
-    sed 's@./extrae_functions_for_xml.txt@'$function_file'@' $extrae_xml > ./`basename $extrae_xml`
-    extrae_xml=`basename $extrae_xml`
-  fi
+    echo "Wrong format in function file \nAborting."
+    exit
+  fi  
+
+  sed 's@./extrae_functions_for_xml.txt@'$final_function_file'@' $extrae_xml > ./`basename $extrae_xml`
+  extrae_xml=`basename $extrae_xml`
+  
   trace=trace.sh
   cat << EOF > $trace
   #!/bin/bash
@@ -132,14 +156,11 @@ fi
 if [[ $XIOS == False ]];then
    if [[ $SCOREP == True ]]
    then
-     source /home/nct00/nct00004/bin/tools_x86_intel17.sh
-     export SCOREP_EXPERIMENT_DIRECTORY=scorep_nemo
      EXEC="time mpirun -np $NEMO_PROC ./$exec_name"
    fi
 
    if [[ $EXTRAE == True ]]
    then 
-     #EXEC="time mpirun -np $NEMO_PROC ./trace.sh ./$exec_name" 
      EXEC="time mpirun -np $NEMO_PROC ./$trace ./$exec_name" 
    else
      EXEC="time mpirun -np $NEMO_PROC ./$exec_name"
@@ -149,5 +170,5 @@ else
 fi
   
 # Actual execution
-eval $EXEC
+#eval $EXEC
    
