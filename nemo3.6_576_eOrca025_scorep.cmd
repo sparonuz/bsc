@@ -170,5 +170,5 @@ else
 fi
   
 # Actual execution
-#eval $EXEC
+eval $EXEC
    
