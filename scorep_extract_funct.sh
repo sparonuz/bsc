@@ -2,14 +2,13 @@
 
 source /home/nct00/nct00004/bin/tools_x86_intel17.sh
 
-#function 2 keep
-fnc2Keep=USR
+N_PROC=576
 
 #discard if the time/visit time is less than
-time_visit=10000.0
+time_visit_percentage=1.0
 
 #discard if the number of visits is greater than #N
-max_n_visit=1000000
+min_n_visit=350
 
 #If this parameter is 0 show all the functions detected by scorep
 show_all=1
@@ -59,12 +58,12 @@ then
   then
     sed -n ''$head_line','$head_line'p;'$((head_line+6))',$p' $file_name_txt | \
     sed 's/,//g' | \
-    awk '(($1 == "'${fnc2Keep}'" && $3 < '$max_n_visit' && $(NF-1) > '$time_visit') || ($1 =="flt")) {print $(NF-6), $(NF-4), $(NF-3), $(NF-2), $(NF-1), $NF}' | \
+    awk '(($1 != "MPI" && $3/'$N_PROC' >= '$min_n_visit' && $(NF-2) > '$time_visit_percentage') || ($1 =="flt")) {print $(NF-6), $(NF-4)/'$N_PROC', $(NF-3), $(NF-2), $(NF-1), $NF}' | \
     column -t 
   else
     sed -n ''$head_line','$head_line'p;'$((head_line+6))',$p' $file_name_txt | \
     sed 's/,//g' | \
-    awk '($1 == "'${fnc2Keep}'" || ($1 =="flt")) {print $(NF-6), $(NF-4), $(NF-3), $(NF-2), $(NF-1), $NF}' | \
+    awk '($1 != "MPI" || ($1 =="flt")) {print $(NF-6), $(NF-4), $(NF-3), $(NF-2), $(NF-1), $NF}' | \
     column -t
 
   fi 
@@ -76,7 +75,7 @@ if [ $w_txt == 1 ]
 then
   sed -n ''$((head_line+6))',$p' $file_name_txt | \
   sed 's/,//g' | \
-  awk '(($1 == "'${fnc2Keep}'" && $3 < '$max_n_visit' && $(NF-1) > '$time_visit')) {print  $NF}'| \
+  awk '(($1 != "MPI" && $3/'$N_PROC' >= '$min_n_visit' && $(NF-2) > '$time_visit_percentage')) {print  $NF}'| \
   sed  's/\./_mp_/g' > $file_name_txt_tmp
   nm $exe_name | grep -i " T " | grep -w -f $file_name_txt_tmp | awk '{print $1" # "$3}' > $extrae_out_file
 
@@ -86,7 +85,7 @@ then
   then
     echo -e "Not all function found in exe file ... check needed \nAborting"
   else
-    echo -e "Found "$n_lin_in" functions to instrument. The output for extrae has been dumped to " $extrae_out_file "file. \nStop."
+    echo -e "Found "$n_lin_in" functions to instrument. The output for extrae has been dumped to " `pwd`"/"$extrae_out_file "file. \nStop."
     rm $file_name_txt $file_name_txt_tmp
   fi
 fi
