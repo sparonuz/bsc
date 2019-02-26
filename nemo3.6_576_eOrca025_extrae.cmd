@@ -93,7 +93,7 @@ else
   cp -s $impi_file .
 fi
 
-cp -s $exec_folder/$xec_name ./ || exit 1
+cp -s $exec_folder/$exec_name ./ || exit 1
 
 # Finding Job id
 RN_JOBID=${SLURM_JOB_ID:-$LSB_JOBID}
