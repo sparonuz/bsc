@@ -42,8 +42,8 @@ export EXTRAE=False
 #export EXTRAE=True
 if [[ $EXTRAE == True ]]
 then 
-  extrae_wrapper=/gpfs/scratch/bsc32/bsc32402/Nemo4/Orca2-r10610/nemo_wrapper.sh
-  extrae_home=/apps/BSCTOOLS/extrae/3.5.2/impi_2017_4/
+  #extrae_home=/apps/BSCTOOLS/extrae/3.5.2/impi_2017_4/
+  extrae_home=/gpfs/projects/bsc32/cs_collaboration/extrae-3.6.1-uf-fix/install-impi-no-dladdr
   extrae_xml=/gpfs/scratch/bsc32/bsc32402/NEMO4/Orca2-r10610/detailed_trace_basic.xml
   function_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_scorep/extrae_functions_for_xml.txt
 fi
