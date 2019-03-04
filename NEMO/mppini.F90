@@ -632,10 +632,8 @@ CONTAINS
       ENDIF
       !
       CALL mpp_init_ioipsl       ! Prepare NetCDF output file (if necessary)
-      write (0, *) "dopo init_ioipsl"
       IF( ln_nnogather ) THEN
          CALL mpp_init_nfdcom     ! northfold neighbour lists
-         write (0, *) "dopo init_nfdcom"
          IF (llwrtlay) THEN
             WRITE(inum,*)
             WRITE(inum,*)
@@ -647,7 +645,6 @@ CONTAINS
          ENDIF
       ENDIF
       IF (llwrtlay) CLOSE(inum)   
-      write (0, *) "dopo CLOSE(inum)  "
       DEALLOCATE(iin, ijn, ii_nono, ii_noea, ii_noso, ii_nowe,    &
          &       iimppt, ijmppt, ibondi, ibondj, ipproc, ipolj,   &
          &       ilci, ilcj, ilei, ilej, ildi, ildj,              &
@@ -1138,7 +1135,6 @@ CONTAINS
       ENDIF
       !
       CALL flio_dom_set ( jpnij, nproc, idid, iglo, iloc, iabsf, iabsl, ihals, ihale, 'BOX', nidom)
-      write(0, *) "sto dopo il fliodomset", narea, inijmin
    END SUBROUTINE mpp_init_ioipsl  
 
 

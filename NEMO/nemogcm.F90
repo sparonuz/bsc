@@ -154,16 +154,12 @@ CONTAINS
             IF ( istp ==         nitend ) elapsed_time = MPI_Wtime() - elapsed_time
             CALL stp        ( istp ) 
             istp = istp + 1
-            write(0, *) "timestep ", istp-1
          END DO
       end if !narea .le. inijmin 
-      write(0, *) "line f 160 "
       !
       IF( ln_diaobs   )   CALL dia_obs_wri
-      write(0, *) "line f diaobs "
       !
       IF( ln_icebergs )   CALL icb_end( nitend )
-      write(0, *) "line f icbend "
 
       !                            !------------------------!
       !                            !==  finalize the run  ==!
@@ -177,9 +173,7 @@ CONTAINS
       ENDIF
       !
       IF( ln_timing )   CALL timing_finalize
-      write(0, *) "line f timing_finalize"
       CALL nemo_closefile
-      write(0, *) "line f close_file"
       !
 #if defined key_iomput
                                     CALL xios_finalize  ! end mpp communications with xios
@@ -350,21 +344,17 @@ CONTAINS
       !
       !                                      ! Domain decomposition
       CALL mpp_init                          ! MPP
-      write(0, *) "after nemo init"
-      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       !from now on only the active cores 
       if (narea .le. inijmin ) then 
 
       ! Now we know the dimensions of the grid and numout has been set: we can allocate arrays
       CALL nemo_alloc()
-      write(0, *) "after nemo alloc"
       
       !                             !-------------------------------!
       !                             !  NEMO general initialization  !
       !                             !-------------------------------!
 
       CALL nemo_ctl                          ! Control prints
-      write(0, *) "after nemo ctl"
       !
       !                                      ! General initialization
       IF( ln_timing    )   CALL timing_init     ! timing
@@ -456,10 +446,7 @@ CONTAINS
       IF(lwp) WRITE(numout,cform_aaa)           ! Flag AAAAAAA
       !
       IF( ln_timing    )   CALL timing_stop( 'nemo_init')
-      write(0, *) "end nemo init"
       end if !narea .le. inijmin 
-      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-      write(0, *) "line f nemoinit "
    END SUBROUTINE nemo_init
 
 
