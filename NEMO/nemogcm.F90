@@ -136,7 +136,7 @@ CONTAINS
       ! check that all process are still there... If some process have an error,
       ! they will never enter in step and other processes will wait until the end of the cpu time!
       
-      !CALL mpp_max( 'nemogcm', nstop )
+      CALL mpp_max( 'nemogcm', nstop )
       
       IF(lwp) WRITE(numout,cform_aaa)   ! Flag AAAAAAA
 
