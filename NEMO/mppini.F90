@@ -255,7 +255,7 @@ CONTAINS
 
       IF( numbot /= -1 )   CALL iom_close( numbot )
       IF( numbdy /= -1 )   CALL iom_close( numbdy )
-   if(nproc < inijmin) then
+   if(narea .le. inijmin) then
       ALLOCATE(  nfiimpp(jpni,jpnj), nfipproc(jpni,jpnj), nfilcit(jpni,jpnj) ,    &
          &       nimppt(jpnij) , ibonit(jpnij) , nlcit(jpnij) , nlcjt(jpnij) ,    &
          &       njmppt(jpnij) , ibonjt(jpnij) , nldit(jpnij) , nldjt(jpnij) ,    &
@@ -614,7 +614,7 @@ CONTAINS
 
       !                          ! Prepare mpp north fold
       IF( jperio >= 3 .AND. jperio <= 6 .AND. jpni > 1 ) THEN
-         if(narea .le. inijmin) CALL mpp_ini_north
+         CALL mpp_ini_north
          IF (lwp) THEN
             WRITE(numout,*)
             WRITE(numout,*) '   ==>>>   North fold boundary prepared for jpni >1'
@@ -632,9 +632,10 @@ CONTAINS
       ENDIF
       !
       CALL mpp_init_ioipsl       ! Prepare NetCDF output file (if necessary)
-      !
+      write (0, *) "dopo init_ioipsl"
       IF( ln_nnogather ) THEN
          CALL mpp_init_nfdcom     ! northfold neighbour lists
+         write (0, *) "dopo init_nfdcom"
          IF (llwrtlay) THEN
             WRITE(inum,*)
             WRITE(inum,*)
@@ -645,15 +646,14 @@ CONTAINS
             WRITE(inum,*) 'isendto : ', isendto
          ENDIF
       ENDIF
-      !
       IF (llwrtlay) CLOSE(inum)   
-      !
+      write (0, *) "dopo CLOSE(inum)  "
       DEALLOCATE(iin, ijn, ii_nono, ii_noea, ii_noso, ii_nowe,    &
          &       iimppt, ijmppt, ibondi, ibondj, ipproc, ipolj,   &
          &       ilci, ilcj, ilei, ilej, ildi, ildj,              &
          &       iono, ioea, ioso, iowe, llisoce)
       !
-      end if
+      end if !narea .lt. inijmin
     END SUBROUTINE mpp_init
 
 
@@ -1138,7 +1138,7 @@ CONTAINS
       ENDIF
       !
       CALL flio_dom_set ( jpnij, nproc, idid, iglo, iloc, iabsf, iabsl, ihals, ihale, 'BOX', nidom)
-      !
+      write(0, *) "sto dopo il fliodomset", narea, inijmin
    END SUBROUTINE mpp_init_ioipsl  
 
 

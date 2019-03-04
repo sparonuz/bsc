@@ -127,28 +127,17 @@ CONTAINS
       !!              Madec, 2008, internal report, IPSL.
       !!----------------------------------------------------------------------
       INTEGER ::   istp   ! time step index
+      INTEGER ::   ierr
       !!----------------------------------------------------------------------
       !
-#if defined key_agrif
-      CALL Agrif_Init_Grids()      ! AGRIF: set the meshes
-#endif
       !                            !-----------------------!
       CALL nemo_init               !==  Initialisations  ==!
       !                            !-----------------------!
-#if defined key_agrif
-      CALL Agrif_Declare_Var_dom   ! AGRIF: set the meshes for DOM
-      CALL Agrif_Declare_Var       !  "      "   "   "      "  DYN/TRA 
-# if defined key_top
-      CALL Agrif_Declare_Var_top   !  "      "   "   "      "  TOP
-# endif
-# if defined key_si3
-      CALL Agrif_Declare_Var_ice   !  "      "   "   "      "  Sea ice
-# endif
-#endif
       ! check that all process are still there... If some process have an error,
       ! they will never enter in step and other processes will wait until the end of the cpu time!
-      CALL mpp_max( 'nemogcm', nstop )
-
+      
+      !CALL mpp_max( 'nemogcm', nstop )
+      
       IF(lwp) WRITE(numout,cform_aaa)   ! Flag AAAAAAA
 
       !                            !-----------------------!
@@ -156,64 +145,25 @@ CONTAINS
       !                            !-----------------------!
       istp = nit000
       !
-#if defined key_c1d
-      DO WHILE ( istp <= nitend .AND. nstop == 0 )    !==  C1D time-stepping  ==!
-         CALL stp_c1d( istp )
-         istp = istp + 1
-      END DO
-#else
       !
-# if defined key_agrif
-      !                                               !==  AGRIF time-stepping  ==!
-      CALL Agrif_Regrid()
       !
-      ! Recursive update from highest nested level to lowest:
-      CALL Agrif_step_child_adj(Agrif_Update_All)
-      !
-      DO WHILE( istp <= nitend .AND. nstop == 0 )
-         CALL stp
-         istp = istp + 1
-      END DO
-      !
-      IF( .NOT. Agrif_Root() ) THEN
-         CALL Agrif_ParentGrid_To_ChildGrid()
-         IF( ln_diaobs )   CALL dia_obs_wri
-         IF( ln_timing )   CALL timing_finalize
-         CALL Agrif_ChildGrid_To_ParentGrid()
-      ENDIF
-      !
-# else
-      !
-      IF( .NOT.ln_diurnal_only ) THEN                 !==  Standard time-stepping  ==!
-         !
-         if (narea .le. inijmin ) then 
+      if (narea .le. inijmin  ) then 
          DO WHILE( istp <= nitend .AND. nstop == 0 )
-#if defined key_mpp_mpi
             ncom_stp = istp
             IF ( istp == ( nit000 + 1 ) ) elapsed_time = MPI_Wtime()
             IF ( istp ==         nitend ) elapsed_time = MPI_Wtime() - elapsed_time
-#endif
             CALL stp        ( istp ) 
             istp = istp + 1
+            write(0, *) "timestep ", istp-1
          END DO
-         end if
-         !
-      ELSE                                            !==  diurnal SST time-steeping only  ==!
-         !
-         DO WHILE( istp <= nitend .AND. nstop == 0 )
-            CALL stp_diurnal( istp )   ! time step only the diurnal SST 
-            istp = istp + 1
-         END DO
-         !
-      ENDIF
-      !
-# endif
-      !
-#endif
+      end if !narea .le. inijmin 
+      write(0, *) "line f 160 "
       !
       IF( ln_diaobs   )   CALL dia_obs_wri
+      write(0, *) "line f diaobs "
       !
       IF( ln_icebergs )   CALL icb_end( nitend )
+      write(0, *) "line f icbend "
 
       !                            !------------------------!
       !                            !==  finalize the run  ==!
@@ -227,8 +177,9 @@ CONTAINS
       ENDIF
       !
       IF( ln_timing )   CALL timing_finalize
-      !
+      write(0, *) "line f timing_finalize"
       CALL nemo_closefile
+      write(0, *) "line f close_file"
       !
 #if defined key_iomput
                                     CALL xios_finalize  ! end mpp communications with xios
@@ -257,6 +208,7 @@ CONTAINS
       INTEGER  ::   ji                 ! dummy loop indices
       INTEGER  ::   ios, ilocal_comm   ! local integers
       CHARACTER(len=120), DIMENSION(60) ::   cltxt, cltxt2, clnam
+      integer :: ierr
       !!
       NAMELIST/namctl/ ln_ctl   , sn_cfctl, nn_print, nn_ictls, nn_ictle,   &
          &             nn_isplt , nn_jsplt, nn_jctls, nn_jctle,             &
@@ -398,18 +350,21 @@ CONTAINS
       !
       !                                      ! Domain decomposition
       CALL mpp_init                          ! MPP
-      
+      write(0, *) "after nemo init"
+      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       !from now on only the active cores 
-      if (narea .le. inijmin) then 
+      if (narea .le. inijmin ) then 
 
       ! Now we know the dimensions of the grid and numout has been set: we can allocate arrays
       CALL nemo_alloc()
-
+      write(0, *) "after nemo alloc"
+      
       !                             !-------------------------------!
       !                             !  NEMO general initialization  !
       !                             !-------------------------------!
 
       CALL nemo_ctl                          ! Control prints
+      write(0, *) "after nemo ctl"
       !
       !                                      ! General initialization
       IF( ln_timing    )   CALL timing_init     ! timing
@@ -501,8 +456,10 @@ CONTAINS
       IF(lwp) WRITE(numout,cform_aaa)           ! Flag AAAAAAA
       !
       IF( ln_timing    )   CALL timing_stop( 'nemo_init')
-      !
-      end if
+      write(0, *) "end nemo init"
+      end if !narea .le. inijmin 
+      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      write(0, *) "line f nemoinit "
    END SUBROUTINE nemo_init
 
 

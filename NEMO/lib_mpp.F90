@@ -200,7 +200,7 @@ CONTAINS
       INTEGER :: ngrp_world, mpi_group_oce, mpi_comm_backup, rank
       INTEGER :: code, ierr
       LOGICAL :: mpi_was_called
-      integer :: my_comm, rank_vec(576)
+      integer :: my_comm, rank_vec(min_n_proc)
       my_comm = 1
 
       CALL mpi_initialized( mpi_was_called, code )
@@ -230,12 +230,12 @@ CONTAINS
 
       ! creating a group from the global bunch of procs
       rank_vec(:) = (/ (rank , rank=0, min_n_proc-1) /)
-      call MPI_COMM_RANK(MPI_COMM_WORLD, rank)
-      if ( rank .lt. min_n_proc) then
+      ! call MPI_COMM_RANK(MPI_COMM_WORLD, rank)
+      ! if ( rank .lt. min_n_proc) then
          call mpi_group_incl(ngrp_world, min_n_proc, rank_vec, mpi_group_oce, code)
-      else
-         call mpi_group_excl(ngrp_world, min_n_proc, rank_vec, mpi_group_oce, code)
-      endif
+      ! else
+      !    call mpi_group_excl(ngrp_world, min_n_proc, rank_vec, mpi_group_oce, code)
+      ! endif
 
       IF( code /= MPI_SUCCESS ) THEN
          WRITE(*, cform_err)
