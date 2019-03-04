@@ -178,7 +178,6 @@ CONTAINS
       !
       IF( ln_timing )   CALL timing_finalize
       write(0, *) "line f timing_finalize"
-      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       CALL nemo_closefile
       write(0, *) "line f close_file"
       !
@@ -572,15 +571,13 @@ CONTAINS
 
 
    SUBROUTINE nemo_closefile
-     IMPLICIT none 
-     integer :: ierr
       !!----------------------------------------------------------------------
       !!                     ***  ROUTINE nemo_closefile  ***
       !!
       !! ** Purpose :   Close the files
       !!----------------------------------------------------------------------
       !
-      IF( lk_mpp )  call MPI_BARRIER(MPI_COMM_WORLD, ierr)! CALL mppsync
+      IF( lk_mpp )  CALL mppsync
       !
       CALL iom_close                                 ! close all input/output files managed by iom_*
       !

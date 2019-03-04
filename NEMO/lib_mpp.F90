@@ -952,7 +952,7 @@ CONTAINS
       INTEGER :: ierror
       !!-----------------------------------------------------------------------
       !
-      CALL mpi_barrier( mpi_comm_oce, ierror )
+      if(mpi_comm_oce /= MPI_COMM_NULL) CALL mpi_barrier( mpi_comm_oce, ierror )
       !
    END SUBROUTINE mppsync
 
