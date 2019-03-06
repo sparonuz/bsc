@@ -86,7 +86,7 @@ MODULE lib_mpp
    PUBLIC   mpp_ini_znl
    PUBLIC   mppsend, mpprecv                          ! needed by TAM and ICB routines
    PUBLIC   mpp_lnk_bdy_2d, mpp_lnk_bdy_3d, mpp_lnk_bdy_4d
-   PUBLIC   my_comm
+   PUBLIC   proc_extract, proc_insert
    !! * Interfaces
    !! define generic interface for these routine as they are called sometimes
    !! with scalar arguments instead of array arguments, which causes problems
@@ -193,15 +193,14 @@ MODULE lib_mpp
    !!----------------------------------------------------------------------
 CONTAINS
    
-   function my_comm(min_n_proc)
+   subroutine proc_extract(min_n_proc)
       implicit none 
       integer, intent(in) :: min_n_proc
       integer :: ji
       INTEGER :: ngrp_world, mpi_group_oce, mpi_comm_backup, rank
       INTEGER :: code, ierr
       LOGICAL :: mpi_was_called
-      integer :: my_comm, rank_vec(min_n_proc)
-      my_comm = 1
+      integer :: rank_vec(min_n_proc)
 
       CALL mpi_initialized( mpi_was_called, code )
       IF( code /= MPI_SUCCESS ) THEN
@@ -209,8 +208,6 @@ CONTAINS
         WRITE(*, *) 'lib_mpp: Error in routine mpi_initialized'
         CALL mpi_abort( mpi_comm_world, code, ierr )
       ENDIF
-      !  CALL mpi_comm_dup( mpi_comm_world, mpi_comm_oce, code)
-      
       
       ! create a group from MPI_COMM_WORLD, needed for creating the new group
       call mpi_comm_group (mpi_comm_world, ngrp_world, code)
@@ -230,13 +227,8 @@ CONTAINS
 
       ! creating a group from the global bunch of procs
       rank_vec(:) = (/ (rank , rank=0, min_n_proc-1) /)
-      ! call MPI_COMM_RANK(MPI_COMM_WORLD, rank)
-      ! if ( rank .lt. min_n_proc) then
-         call mpi_group_incl(ngrp_world, min_n_proc, rank_vec, mpi_group_oce, code)
-      ! else
-      !    call mpi_group_excl(ngrp_world, min_n_proc, rank_vec, mpi_group_oce, code)
-      ! endif
 
+      call mpi_group_incl(ngrp_world, min_n_proc, rank_vec, mpi_group_oce, code)
       IF( code /= MPI_SUCCESS ) THEN
          WRITE(*, cform_err)
          WRITE(*, *) ' lib_mpp: Error in routine mpi_group_incl'
@@ -245,16 +237,47 @@ CONTAINS
       
       ! create the new communicator from the MPI_COMM_WORLD using the new group
       call mpi_comm_create_group(mpi_comm_world, mpi_group_oce, 0, mpi_comm_oce, code)
-      if (mpi_comm_oce == MPI_COMM_NULL) then 
-         write (0, *) 'Ho il comunicatore nullo, e sono ', rank
-      endif
       IF( code /= MPI_SUCCESS ) THEN
         WRITE(*, cform_err)
         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_create'
         CALL mpi_abort( mpi_comm_world, code, ierr )
       ENDIF
-      my_comm = 0
-   end function my_comm
+   end subroutine proc_extract
+
+   subroutine proc_insert
+      implicit none 
+      INTEGER :: code, ierr
+      LOGICAL :: mpi_was_called
+
+      CALL mpi_initialized( mpi_was_called, code )
+      IF( code /= MPI_SUCCESS ) THEN
+        WRITE(*, cform_err)
+        WRITE(*, *) 'lib_mpp: Error in routine mpi_initialized'
+        CALL mpi_abort( mpi_comm_world, code, ierr )
+      ENDIF
+      
+      
+      ! free the communicator if it was initialized
+      if( mpi_comm_oce /= MPI_COMM_NULL) &
+        call mpi_comm_free(mpi_comm_oce, code)
+      ! last call is blocking just among processes in the communicator,
+      ! enforcement of sync is needed
+      call mpi_barrier(MPI_COMM_WORLD, ierr)
+      IF( code /= MPI_SUCCESS ) THEN
+         WRITE(*, cform_err)
+         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
+         CALL mpi_abort( mpi_comm_world, code, ierr )
+      ENDIF
+
+      CALL mpi_comm_dup( mpi_comm_world, mpi_comm_oce, code)
+
+      IF( code /= MPI_SUCCESS ) THEN
+         WRITE(*, cform_err)
+         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_dup'
+         CALL mpi_abort( mpi_comm_world, code, ierr )
+      ENDIF
+      
+   end subroutine proc_insert
 
    FUNCTION mynode( ldtxt, ldname, kumnam_ref, kumnam_cfg, kumond, kstop, localComm )
       !!----------------------------------------------------------------------

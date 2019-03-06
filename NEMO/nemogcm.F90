@@ -149,30 +149,31 @@ CONTAINS
       !
       if (narea .le. inijmin  ) then 
          DO WHILE( istp <= nitend .AND. nstop == 0 )
+            ! if (narea .gt. inijmin  ) exit
             ncom_stp = istp
             IF ( istp == ( nit000 + 1 ) ) elapsed_time = MPI_Wtime()
             IF ( istp ==         nitend ) elapsed_time = MPI_Wtime() - elapsed_time
             CALL stp        ( istp ) 
             istp = istp + 1
          END DO
-      end if !narea .le. inijmin 
-      !
-      IF( ln_diaobs   )   CALL dia_obs_wri
-      !
-      IF( ln_icebergs )   CALL icb_end( nitend )
+         !
+         IF( ln_diaobs   )   CALL dia_obs_wri
+         !
+         IF( ln_icebergs )   CALL icb_end( nitend )
 
-      !                            !------------------------!
-      !                            !==  finalize the run  ==!
-      !                            !------------------------!
-      IF(lwp) WRITE(numout,cform_aaa)        ! Flag AAAAAAA
-      !
-      IF( nstop /= 0 .AND. lwp ) THEN        ! error print
-         WRITE(numout,cform_err)
-         WRITE(numout,*) '   ==>>>   nemo_gcm: a total of ', nstop, ' errors have been found'
-         WRITE(numout,*)
-      ENDIF
-      !
-      IF( ln_timing )   CALL timing_finalize
+         !                            !------------------------!
+         !                            !==  finalize the run  ==!
+         !                            !------------------------!
+         IF(lwp) WRITE(numout,cform_aaa)        ! Flag AAAAAAA
+         !
+         IF( nstop /= 0 .AND. lwp ) THEN        ! error print
+            WRITE(numout,cform_err)
+            WRITE(numout,*) '   ==>>>   nemo_gcm: a total of ', nstop, ' errors have been found'
+            WRITE(numout,*)
+         ENDIF
+         !
+         IF( ln_timing )   CALL timing_finalize
+      end if !narea .le. inijmin 
       CALL nemo_closefile
       !
 #if defined key_iomput
@@ -564,6 +565,7 @@ CONTAINS
       !! ** Purpose :   Close the files
       !!----------------------------------------------------------------------
       !
+      call proc_insert
       IF( lk_mpp )  CALL mppsync
       !
       CALL iom_close                                 ! close all input/output files managed by iom_*

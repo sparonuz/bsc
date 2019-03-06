@@ -158,7 +158,6 @@ CONTAINS
       INTEGER, ALLOCATABLE, DIMENSION(:,:) ::   ilei, ildi, iono, ioea         !  -     -
       INTEGER, ALLOCATABLE, DIMENSION(:,:) ::   ilej, ildj, ioso, iowe         !  -     -
       LOGICAL, ALLOCATABLE, DIMENSION(:,:) ::   llisoce          
-      INTEGER :: retval_my_comm              !  -     -
       NAMELIST/nambdy/ ln_bdy, nb_bdy, ln_coords_file, cn_coords_file,           &
            &             ln_mask_file, cn_mask_file, cn_dyn2d, nn_dyn2d_dta,     &
            &             cn_dyn3d, nn_dyn3d_dta, cn_tra, nn_tra_dta,             &  
@@ -237,7 +236,7 @@ CONTAINS
          WRITE(ctmp3,9002) '   we suppressed ', jpni*jpnj - mppsize, ' land subdomains '
          WRITE(ctmp4,9002) '   BUT we had to keep ', mppsize - inijmin, ' land subdomains that are useless...'
          CALL ctl_warn( 'mpp_init:', '~~~~~~~~ ', ctmp1, ctmp2, ctmp3, ctmp4, ' ', '    --- YOU ARE WASTING CPU... ---', ' ' )
-         retval_my_comm = my_comm(inijmin)
+         call proc_extract(inijmin)
       ELSE   ! mppsize = inijmin
          IF(lwp) THEN
             IF(llbest) WRITE(numout,*) 'mpp_init: You use an optimal domain decomposition'
