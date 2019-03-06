@@ -255,7 +255,10 @@ CONTAINS
 
       IF( numbot /= -1 )   CALL iom_close( numbot )
       IF( numbdy /= -1 )   CALL iom_close( numbdy )
-   if(narea .le. inijmin) then
+   
+      !from now on only active cores
+      if(narea .gt. inijmin) return
+   
       ALLOCATE(  nfiimpp(jpni,jpnj), nfipproc(jpni,jpnj), nfilcit(jpni,jpnj) ,    &
          &       nimppt(jpnij) , ibonit(jpnij) , nlcit(jpnij) , nlcjt(jpnij) ,    &
          &       njmppt(jpnij) , ibonjt(jpnij) , nldit(jpnij) , nldjt(jpnij) ,    &
@@ -650,7 +653,6 @@ CONTAINS
          &       ilci, ilcj, ilei, ilej, ildi, ildj,              &
          &       iono, ioea, ioso, iowe, llisoce)
       !
-      end if !narea .lt. inijmin
     END SUBROUTINE mpp_init
 
 

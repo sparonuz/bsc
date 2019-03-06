@@ -344,8 +344,9 @@ CONTAINS
       !
       !                                      ! Domain decomposition
       CALL mpp_init                          ! MPP
+      
       !from now on only the active cores 
-      if (narea .le. inijmin ) then 
+      if (narea .gt. inijmin ) return
 
       ! Now we know the dimensions of the grid and numout has been set: we can allocate arrays
       CALL nemo_alloc()
@@ -446,7 +447,6 @@ CONTAINS
       IF(lwp) WRITE(numout,cform_aaa)           ! Flag AAAAAAA
       !
       IF( ln_timing    )   CALL timing_stop( 'nemo_init')
-      end if !narea .le. inijmin 
    END SUBROUTINE nemo_init
 
 
