@@ -86,7 +86,7 @@ MODULE lib_mpp
    PUBLIC   mpp_ini_znl
    PUBLIC   mppsend, mpprecv                          ! needed by TAM and ICB routines
    PUBLIC   mpp_lnk_bdy_2d, mpp_lnk_bdy_3d, mpp_lnk_bdy_4d
-   PUBLIC   proc_extract, proc_insert
+   PUBLIC   mpp_proc_extract, mpp_proc_insert
    !! * Interfaces
    !! define generic interface for these routine as they are called sometimes
    !! with scalar arguments instead of array arguments, which causes problems
@@ -193,7 +193,7 @@ MODULE lib_mpp
    !!----------------------------------------------------------------------
 CONTAINS
    
-   subroutine proc_extract(min_n_proc)
+   subroutine mpp_proc_extract(min_n_proc)
       implicit none 
       integer, intent(in) :: min_n_proc
       integer :: ji
@@ -242,9 +242,9 @@ CONTAINS
         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_create'
         CALL mpi_abort( mpi_comm_world, code, ierr )
       ENDIF
-   end subroutine proc_extract
+   end subroutine mpp_proc_extract
 
-   subroutine proc_insert
+   subroutine mpp_proc_insert
       implicit none 
       INTEGER :: code, ierr
       LOGICAL :: mpi_was_called
@@ -255,7 +255,6 @@ CONTAINS
         WRITE(*, *) 'lib_mpp: Error in routine mpi_initialized'
         CALL mpi_abort( mpi_comm_world, code, ierr )
       ENDIF
-      
       
       ! free the communicator if it was initialized
       if( mpi_comm_oce /= MPI_COMM_NULL) &
@@ -277,7 +276,7 @@ CONTAINS
          CALL mpi_abort( mpi_comm_world, code, ierr )
       ENDIF
       
-   end subroutine proc_insert
+   end subroutine mpp_proc_insert
 
    FUNCTION mynode( ldtxt, ldname, kumnam_ref, kumnam_cfg, kumond, kstop, localComm )
       !!----------------------------------------------------------------------

@@ -236,7 +236,7 @@ CONTAINS
          WRITE(ctmp3,9002) '   we suppressed ', jpni*jpnj - mppsize, ' land subdomains '
          WRITE(ctmp4,9002) '   BUT we had to keep ', mppsize - inijmin, ' land subdomains that are useless...'
          CALL ctl_warn( 'mpp_init:', '~~~~~~~~ ', ctmp1, ctmp2, ctmp3, ctmp4, ' ', '    --- YOU ARE WASTING CPU... ---', ' ' )
-         call proc_extract(inijmin)
+         call mpp_proc_extract(inijmin)
       ELSE   ! mppsize = inijmin
          IF(lwp) THEN
             IF(llbest) WRITE(numout,*) 'mpp_init: You use an optimal domain decomposition'

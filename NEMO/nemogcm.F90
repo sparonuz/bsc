@@ -133,23 +133,20 @@ CONTAINS
       !                            !-----------------------!
       CALL nemo_init               !==  Initialisations  ==!
       !                            !-----------------------!
-      ! check that all process are still there... If some process have an error,
-      ! they will never enter in step and other processes will wait until the end of the cpu time!
-      
-      CALL mpp_max( 'nemogcm', nstop )
-      
-      IF(lwp) WRITE(numout,cform_aaa)   ! Flag AAAAAAA
-
-      !                            !-----------------------!
-      !                            !==   time stepping   ==!
-      !                            !-----------------------!
-      istp = nit000
-      !
-      !
-      !
       if (narea .le. inijmin  ) then 
+         ! check that all process are still there... If some process have an error,
+         ! they will never enter in step and other processes will wait until the end of the cpu time!
+         CALL mpp_max( 'nemogcm', nstop )
+      
+         IF(lwp) WRITE(numout,cform_aaa)   ! Flag AAAAAAA
+         !                            !-----------------------!
+         !                            !==   time stepping   ==!
+         !                            !-----------------------!
+         istp = nit000
+         !
+         !
+         !
          DO WHILE( istp <= nitend .AND. nstop == 0 )
-            ! if (narea .gt. inijmin  ) exit
             ncom_stp = istp
             IF ( istp == ( nit000 + 1 ) ) elapsed_time = MPI_Wtime()
             IF ( istp ==         nitend ) elapsed_time = MPI_Wtime() - elapsed_time
@@ -565,7 +562,7 @@ CONTAINS
       !! ** Purpose :   Close the files
       !!----------------------------------------------------------------------
       !
-      call proc_insert
+      call mpp_proc_insert
       IF( lk_mpp )  CALL mppsync
       !
       CALL iom_close                                 ! close all input/output files managed by iom_*
