@@ -2,24 +2,25 @@
 ###############################################################################
 #                             RUN NEMO
 ###############################################################################
-#SBATCH --ntasks 576 
+#SBATCH --ntasks 624 
 #SBATCH --ntasks-per-node 44
 #SBATCH --job-name O025_N4_r10075
 #SBATCH --output nemo4-newcomm.o 
 #SBATCH --error  nemo4-newcomm.e
 ##SBATCH -R "span[ptile=16]"
-#SBATCH --time 10:00
+#SBATCH --time 30:00
 #SBATCH --qos=debug
 
 #cd $SLURM_SUBMIT_DIR
 
 # Replace the number of resources used for NEMO and XIOS
 NEMO_PROC=576
-XIOS_PROC=0
+XIOS_PROC=48
 TIME_STEP=12
 
 # Export extrae variable (for the wrapper to know if it is activated)
-XIOS=False
+#XIOS=False
+XIOS=True
 
 set -xv
 
@@ -27,8 +28,9 @@ exec_name=nemo
 #exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_scorep/EXP00/
 #exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_fine_f/EXP00/
 exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_jpnij/EXP00/
+#exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2/EXP00/
 #Create the new folder
-exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_extrae_newcomm
+exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_opt
 
 #Input files
 xml_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/eORCA025/xml/
@@ -36,7 +38,8 @@ netCDF_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/eORCA025/input_files/
 namelist_folder=$netCDF_folder
 
 #Debug mode
-DDT=True
+#DDT=True
+DDT=False
 #extrae variables
 export EXTRAE=False
 #export EXTRAE=True
@@ -48,7 +51,11 @@ then
   function_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_scorep/extrae_functions_for_xml.txt
 fi
 
-
+if [[ $XIOS == True ]] 
+then
+  xios_exec_folder=/home/bsc32/bsc32402/local/XIOS/xios-2.5/bin/
+  xios_exec_name=xios_server.exe
+fi
 #SCOREP=True
 SCOREP=False
 if [[ $SCOREP == True ]]
@@ -95,6 +102,10 @@ fi
 
 cp -s $exec_folder/$exec_name ./ || exit 1
 
+if [[ $XIOS == True ]]
+then
+  cp -s $xios_exec_folder/$xios_exec_name ./ || exit 1
+fi
 # Finding Job id
 RN_JOBID=${SLURM_JOB_ID:-$LSB_JOBID}
 
@@ -108,7 +119,8 @@ fi
 source impi.env
    
 # Modify the iodef.xml file to select if using or not servers.
-if [[ False == True ]]; then
+#if [[ False == True ]]; then
+if [[ $XIOS == True ]]; then
     XSERVER=true
 else
     XSERVER=false
@@ -157,29 +169,29 @@ EOF
   chmod 755 $trace
 fi
 
-# Launch command
-if [[ $XIOS == False ]];then
-   if [[ $SCOREP == True ]]
-   then
-     EXEC="time mpirun -np $NEMO_PROC ./$exec_name"
-   fi
-
-   if [[ $EXTRAE == True ]]
-   then 
-     EXEC="time mpirun -np $NEMO_PROC ./$trace ./$exec_name" 
-   else
-     if [[ $DDT == True ]] 
-     then 
-       module load DDT/18.2 
-       EXEC="ddt --connect mpirun -np $NEMO_PROC ./$exec_name"
-     else
-       EXEC="time mpirun -np $NEMO_PROC ./$exec_name"
-     fi 
-   fi
-else
-   EXEC="time mpirun -np $XIOS_PROC ./xios_wrapper.sh ./xios_server.exe : -np $NEMO_PROC ./nemo_wrapper.sh ./$exec_name"
+if [[ $XIOS == True ]] 
+then
+  XIOS_EXEC="-np $XIOS_PROC  ./xios_server.exe : "
 fi
-  
+# Launch command
+if [[ $SCOREP == True ]]
+then
+  EXEC="time mpirun $XIOS_EXEC -np $NEMO_PROC ./$exec_name"
+fi
+
+if [[ $EXTRAE == True ]]
+then 
+  EXEC="time mpirun $XIOS_EXEC -np $NEMO_PROC ./$trace ./$exec_name" 
+else
+  if [[ $DDT == True ]] 
+  then 
+    module load DDT/18.2 
+    EXEC="ddt --connect mpirun $XIOS_EXEC -np $NEMO_PROC ./$exec_name"
+  else
+    EXEC="time mpirun $XIOS_EXEC -np $NEMO_PROC ./$exec_name"
+  fi 
+fi
+   
 # Actual execution
 eval $EXEC
    
