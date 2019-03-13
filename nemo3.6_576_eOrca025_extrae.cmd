@@ -15,12 +15,16 @@
 
 # Replace the number of resources used for NEMO and XIOS
 NEMO_PROC=576
-XIOS_PROC=48
 TIME_STEP=12
 
 # Export extrae variable (for the wrapper to know if it is activated)
 #XIOS=False
 XIOS=True
+
+if [[ $XIOS == True ]]
+then
+ XIOS_PROC=48 
+fi
 
 set -xv
 
@@ -38,8 +42,8 @@ netCDF_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/eORCA025/input_files/
 namelist_folder=$netCDF_folder
 
 #Debug mode
-#DDT=True
-DDT=False
+DDT=True
+#DDT=False
 #extrae variables
 export EXTRAE=False
 #export EXTRAE=True
