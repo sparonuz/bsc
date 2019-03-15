@@ -268,11 +268,16 @@ CONTAINS
       !    CALL mpi_abort(MPI_COMM_WORLD, code, ierr )
       ! ENDIF
    end subroutine mpp_proc_extract
-
+ 
    subroutine mpp_proc_insert
       implicit none 
+      INTEGER :: mpi_comm_oce_new
+      INTEGER :: mpi_group_oce_new
       INTEGER :: code, ierr
       LOGICAL :: mpi_was_called
+      INTEGER :: rank_world(mppsize), rank_oce(mppsize), rank_index, &
+                 mpi_group_world,                  &
+                 mpi_group_world_size, mpi_group_oce_size
 
       CALL mpi_initialized( mpi_was_called, code )
       IF( code /= MPI_SUCCESS ) THEN
@@ -281,20 +286,36 @@ CONTAINS
         CALL mpi_abort( mpi_comm_world, code, ierr )
       ENDIF
       
-      ! free the communicator if it was initialized
-      if( mpi_comm_oce /= MPI_COMM_NULL) &
-        call mpi_comm_free(mpi_comm_oce, code)
+      
+      ! call mpi_group_union(mpi_group_oce, mpi_group_idle, mpi_group_oce_new, code)
+      ! IF( code /= MPI_SUCCESS ) THEN
+      !    WRITE(*, cform_err)
+      !    WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
+      !    CALL mpi_abort( mpi_comm_world, code, ierr )
+      ! ENDIF
+
+      CALL mpi_comm_group(mpi_comm_world, mpi_group_world, code)
+      
+      call mpi_group_size(mpi_group_world, mpi_group_world_size, code)
+      call mpi_group_size(mpi_group_oce,  mpi_group_oce_size,   code)
+      
+      rank_world(:) = (/ (rank_index, &
+                          rank_index = (mpi_group_world_size-mpi_group_oce_size), mpi_group_world_size-1) /)
+      rank_oce(:)   = (/ (rank_index, &
+                          rank_index = 0, mpi_group_oce_size-1) /)
+      
+      call mpi_group_translate_ranks(mpi_group_world, mpi_group_oce_size, rank_world, mpi_group_oce, rank_oce, code)
+      
+      call mpi_comm_create_group(mpi_comm_world, mpi_group_oce, 0, mpi_comm_oce_new, code)
+      ! IF( code /= MPI_SUCCESS ) THEN
+      !    WRITE(*, cform_err)
+      !    WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
+      !    CALL mpi_abort( mpi_comm_world, code, ierr )
+      ! ENDIF
       ! last call is blocking just among processes in the communicator,
       ! enforcement of sync is needed
-      call mpi_barrier(MPI_COMM_WORLD, ierr)
-      IF( code /= MPI_SUCCESS ) THEN
-         WRITE(*, cform_err)
-         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
-         CALL mpi_abort( mpi_comm_world, code, ierr )
-      ENDIF
-
-      CALL mpi_comm_dup( mpi_comm_world, mpi_comm_oce, code)
-
+      !if( mpi_comm_oce /= mpi_comm_null) call mpi_comm_free(mpi_comm_oce, code)
+      mpi_comm_oce = mpi_comm_oce_new
       IF( code /= MPI_SUCCESS ) THEN
          WRITE(*, cform_err)
          WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_dup'
@@ -302,6 +323,39 @@ CONTAINS
       ENDIF
       
    end subroutine mpp_proc_insert
+   ! subroutine mpp_proc_insert
+   !    implicit none 
+   !    INTEGER :: code, ierr
+   !    LOGICAL :: mpi_was_called
+
+   !    CALL mpi_initialized( mpi_was_called, code )
+   !    IF( code /= MPI_SUCCESS ) THEN
+   !      WRITE(*, cform_err)
+   !      WRITE(*, *) 'lib_mpp: Error in routine mpi_initialized'
+   !      CALL mpi_abort( mpi_comm_world, code, ierr )
+   !    ENDIF
+      
+   !    ! free the communicator if it was initialized
+   !    if( mpi_comm_oce /= MPI_COMM_NULL) &
+   !      call mpi_comm_free(mpi_comm_oce, code)
+   !    ! last call is blocking just among processes in the communicator,
+   !    ! enforcement of sync is needed
+   !    call mpi_barrier(MPI_COMM_WORLD, ierr)
+   !    IF( code /= MPI_SUCCESS ) THEN
+   !       WRITE(*, cform_err)
+   !       WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
+   !       CALL mpi_abort( mpi_comm_world, code, ierr )
+   !    ENDIF
+
+   !    CALL mpi_comm_dup( mpi_comm_world, mpi_comm_oce, code)
+
+   !    IF( code /= MPI_SUCCESS ) THEN
+   !       WRITE(*, cform_err)
+   !       WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_dup'
+   !       CALL mpi_abort( mpi_comm_world, code, ierr )
+   !    ENDIF
+      
+   ! end subroutine mpp_proc_insert
 
    FUNCTION mynode( ldtxt, ldname, kumnam_ref, kumnam_cfg, kumond, kstop, localComm )
       !!----------------------------------------------------------------------
