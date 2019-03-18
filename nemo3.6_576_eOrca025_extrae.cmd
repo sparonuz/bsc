@@ -65,7 +65,7 @@ SCOREP=False
 if [[ $SCOREP == True ]]
 then
   scorep_dir=scorep_nemo
-  source /home/nct00/nct00004/bin/tools_x86_intel17.sh
+  module load scorep
   export SCOREP_EXPERIMENT_DIRECTORY=$scorep_dir
 fi
 
