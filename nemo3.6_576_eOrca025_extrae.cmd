@@ -64,6 +64,7 @@ fi
 SCOREP=False
 if [[ $SCOREP == True ]]
 then
+  TIME_STEP=500
   scorep_dir=scorep_nemo
   module load scorep
   export SCOREP_EXPERIMENT_DIRECTORY=$scorep_dir
