@@ -1,6 +1,9 @@
 #!/bin/bash
 
-source /home/nct00/nct00004/bin/tools_x86_intel17.sh
+if [[ `command -v scorep | wc -l` -eq 0 ]] 
+then
+   module load scorep
+fi
 
 N_PROC=576
 
