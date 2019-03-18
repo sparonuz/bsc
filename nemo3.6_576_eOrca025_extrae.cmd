@@ -16,7 +16,8 @@
 # Replace the number of resources used for NEMO and XIOS
 NEMO_PROC=576
 TIME_STEP=12
-
+#RESTART=True
+RESTART=False
 # Export extrae variable (for the wrapper to know if it is activated)
 #XIOS=False
 XIOS=True
@@ -34,7 +35,7 @@ exec_name=nemo
 exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_jpnij/EXP00/
 #exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2/EXP00/
 #Create the new folder
-exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_opt
+exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_ref_rest
 
 #Input files
 xml_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/eORCA025/xml/
@@ -42,11 +43,16 @@ netCDF_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/eORCA025/input_files/
 namelist_folder=$netCDF_folder
 
 #Debug mode
-DDT=True
-#DDT=False
+#DDT=True
+DDT=False
 #extrae variables
 export EXTRAE=False
 #export EXTRAE=True
+if [[ $RESTART == True ]]
+then
+  restart_files=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_opt
+fi
+
 if [[ $EXTRAE == True ]]
 then 
   #extrae_home=/apps/BSCTOOLS/extrae/3.5.2/impi_2017_4/
@@ -64,8 +70,8 @@ fi
 SCOREP=False
 if [[ $SCOREP == True ]]
 then
-  TIME_STEP=500
   scorep_dir=scorep_nemo
+#  source /home/nct00/nct00004/bin/tools_x86_intel17.sh
   module load scorep
   export SCOREP_EXPERIMENT_DIRECTORY=$scorep_dir
 fi
@@ -85,6 +91,12 @@ cp $xml_folder/*.xml . || exit 1
 cp $namelist_folder/namelist_* . || exit 1
 cp -s $netCDF_folder/*.nc . || exit 1
 cp $netCDF_folder/*.dat . 2> /dev/null || echo "                               0  0.0000000000000000E+00  0.0000000000000000E+00" > EMPave_old.dat
+
+if [[ $RESTART == True ]]
+then
+  sed -ri 's/(.)(ln_rstart)(.*)/   \2    = .true. /' namelist_cfg   
+  sed -ri 's@(.)(cn_ocerst_indir)(.*)@   \2    =\"'$restart_files'\"@' namelist_cfg   
+fi
 
 #rm context_nemo.xml
 sed '/def_nemo-ice/d' $xml_folder/context_nemo.xml | sed '/def_nemo-pisces/d' > context_nemo.xml
@@ -176,7 +188,12 @@ fi
 
 if [[ $XIOS == True ]] 
 then
-  XIOS_EXEC="-np $XIOS_PROC  ./xios_server.exe : "
+    if [[ $EXTRAE == True ]]
+  then
+    XIOS_EXEC="-np $XIOS_PROC ./$trace ./xios_server.exe : "
+  else
+    XIOS_EXEC="-np $XIOS_PROC  ./xios_server.exe : "
+  fi
 fi
 # Launch command
 if [[ $SCOREP == True ]]
