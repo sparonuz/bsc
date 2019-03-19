@@ -241,7 +241,7 @@ CONTAINS
       CALL mpi_comm_group(mpi_comm_world, mpi_group_world, code)
 
       ! recreating the original oce comm with all oce processes
-      CALL mpi_comm_create_group(mpi_comm_world, mpi_group_oce, 0, mpi_comm_oce, code)
+      CALL mpi_comm_create_group(mpi_comm_world, mpi_group_oce, 0, mpi_comm_oce_new, code)
       IF( code /= MPI_SUCCESS ) THEN
          WRITE(*, cform_err)
          WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_create_group'
