@@ -19,7 +19,7 @@ MODULE lib_mpp
    !!            3.2  !  2009  (O. Marti)    add mpp_ini_znl
    !!            4.0  !  2011  (G. Madec)  move ctl_ routines from in_out_manager
    !!            3.5  !  2012  (S.Mocavero, I. Epicoco) Add mpp_lnk_bdy_3d/2d routines to optimize the BDY comm.
-   !!            3.5  !  2013  (C. Ethe, G. Madec)  message passing arrays as local variables 
+   !!            3.5  !  2013  (C. Ethe, G. Madec)  message passing arrays as local variables
    !!            3.5  !  2013  (S.Mocavero, I.Epicoco - CMCC) north fold optimizations
    !!            3.6  !  2015  (O. Tintó and M. Castrillo - BSC) Added '_multiple' case for 2D lbc and max
    !!            4.0  !  2017  (G. Madec) automatique allocation of array argument (use any 3rd dimension)
@@ -174,13 +174,13 @@ MODULE lib_mpp
       REAL(   wp), POINTER, DIMENSION(:) ::  z1d => NULL()
       COMPLEX(wp), POINTER, DIMENSION(:) ::  y1d => NULL()
    END TYPE DELAYARR
-   TYPE( DELAYARR ), DIMENSION(nbdelay), PUBLIC  ::   todelay              
+   TYPE( DELAYARR ), DIMENSION(nbdelay), PUBLIC  ::   todelay
    INTEGER,          DIMENSION(nbdelay), PUBLIC  ::   ndelayid = -1     !: mpi request id of the delayed operations
 
    ! timing summary report
    REAL(wp), DIMENSION(2), PUBLIC ::  waiting_time = 0._wp
    REAL(wp)              , PUBLIC ::  compute_time = 0._wp, elapsed_time = 0._wp
-   
+
    REAL(wp), DIMENSION(:), ALLOCATABLE, SAVE ::   tampon   ! buffer in case of bsend
 
    LOGICAL, PUBLIC ::   ln_nnogather                !: namelist control of northfold comms
@@ -192,14 +192,14 @@ MODULE lib_mpp
    !! Software governed by the CeCILL license (see ./LICENSE)
    !!----------------------------------------------------------------------
 CONTAINS
-   
+
    SUBROUTINE mpp_proc_extract(min_n_proc)
-      IMPLICIT NONE 
+      IMPLICIT NONE
       INTEGER, INTENT(in) :: min_n_proc
       INTEGER :: mpi_group_oce_new, mpi_comm_oce_new
       INTEGER :: rank_index, rank_vec(min_n_proc)
       INTEGER :: code, ierr
-      
+
       ! create a group from  mpi_comm_oce
       CALL mpi_comm_group (mpi_comm_oce, mpi_group_oce, code)
       IF( code /= MPI_SUCCESS ) THEN
@@ -207,10 +207,10 @@ CONTAINS
         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_group'
         CALL mpi_abort(mpi_comm_world, code, ierr )
       ENDIF
-      
+
       ! fill the vector with the useful ranks
       rank_vec(:) = (/ (rank_index , rank_index=0, min_n_proc-1) /)
-      
+
       ! creating the group of useful procs
       CALL mpi_group_incl(mpi_group_oce, min_n_proc, rank_vec, mpi_group_oce_new, code)
       IF( code /= MPI_SUCCESS ) THEN
@@ -218,7 +218,7 @@ CONTAINS
          WRITE(*, *) ' lib_mpp: Error in routine mpi_group_incl'
          CALL mpi_abort(mpi_comm_world, code, ierr )
       ENDIF
-      
+
       ! create the new communicator from the mpi_comm_oce using the new group
       CALL mpi_comm_create_group(mpi_comm_oce, mpi_group_oce_new, 0, mpi_comm_oce_new, code)
       IF( code /= MPI_SUCCESS ) THEN
@@ -226,67 +226,30 @@ CONTAINS
         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_create'
         CALL mpi_abort( MPI_COMM_WORLD, code, ierr )
       ENDIF
-     
+
       mpi_comm_oce = mpi_comm_oce_new
-   
+
    END SUBROUTINE mpp_proc_extract
 
    SUBROUTINE mpp_proc_insert
-      IMPLICIT NONE 
-      INTEGER :: mpi_comm_oce_new, mpi_group_oce_new
+      IMPLICIT NONE
+      INTEGER :: mpi_comm_oce_new
       INTEGER :: code, ierr
-      INTEGER :: rank_world(mppsize), rank_oce(mppsize), rank_index, &
-                 mpi_group_world,                  &
-                 mpi_group_world_size, mpi_group_oce_size
+      INTEGER :: mpi_group_world
 
-      ! retrieving the total number of procs      
+      !THIS IS JUST A BUGFIX: unless this call is not done intel_mpi is not segfaulting
       CALL mpi_comm_group(mpi_comm_world, mpi_group_world, code)
-      IF( code /= MPI_SUCCESS ) THEN
-         WRITE(*, cform_err)
-         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_group'
-         CALL mpi_abort( mpi_comm_world, code, ierr )
-      ENDIF
-      
-      ! creating the total group of procs
-      CALL mpi_group_size(mpi_group_world, mpi_group_world_size, code)
-      IF( code /= MPI_SUCCESS ) THEN
-         WRITE(*, cform_err)
-         WRITE(*, *) ' lib_mpp: Error in routine mpi_group_size'
-         CALL mpi_abort( mpi_comm_world, code, ierr )
-      ENDIF
 
-      !retrieving the current size of the comm oce
-      CALL mpi_group_size(mpi_group_oce,  mpi_group_oce_size, code)
-      IF( code /= MPI_SUCCESS ) THEN
-         WRITE(*, cform_err)
-         WRITE(*, *) ' lib_mpp: Error in routine mpi_group_size'
-         CALL mpi_abort( mpi_comm_world, code, ierr )
-      ENDIF
-      
-      ! filling vectors for mapping ranks from local to globa comms
-      rank_world(:) = (/ (rank_index, &
-                          rank_index = (mpi_group_world_size-mpi_group_oce_size), mpi_group_world_size-1) /)
-      rank_oce(:)   = (/ (rank_index, &
-                          rank_index = 0, mpi_group_oce_size-1) /)
-      
-      ! translating ranks
-      CALL mpi_group_translate_ranks(mpi_group_world, mpi_group_oce_size, rank_world, mpi_group_oce, rank_oce, code)
-      IF( code /= MPI_SUCCESS ) THEN
-         WRITE(*, cform_err)
-         WRITE(*, *) ' lib_mpp: Error in routine mpi_group_translate_ranks'
-         CALL mpi_abort( mpi_comm_world, code, ierr )
-      ENDIF
-      
       ! recreating the original oce comm with all oce processes
-      CALL mpi_comm_create_group(mpi_comm_world, mpi_group_oce, 0, mpi_comm_oce_new, code)
+      CALL mpi_comm_create_group(mpi_comm_world, mpi_group_oce, 0, mpi_comm_oce, code)
       IF( code /= MPI_SUCCESS ) THEN
          WRITE(*, cform_err)
          WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_create_group'
          CALL mpi_abort( mpi_comm_world, code, ierr )
       ENDIF
-      
+
       mpi_comm_oce = mpi_comm_oce_new
-      
+
       !mpicommfreeocenew?
    end subroutine mpp_proc_insert
 
@@ -420,7 +383,7 @@ CONTAINS
 
       IF( mynode == 0 ) THEN
          CALL ctl_opn( kumond, TRIM(ldname), 'UNKNOWN', 'FORMATTED', 'SEQUENTIAL', -1, 6, .FALSE. , 1 )
-         WRITE(kumond, nammpp)      
+         WRITE(kumond, nammpp)
       ENDIF
       !
       CALL MPI_OP_CREATE(DDPDD_MPI, .TRUE., MPI_SUMDD, ierr)
@@ -568,11 +531,11 @@ CONTAINS
    !!----------------------------------------------------------------------
    !!
    !!   load_array  &   mpp_lnk_2d_9    à generaliser a 3D et 4D
-   
-   
+
+
    !!    mpp_lnk_sum_2d et 3D   ====>>>>>>   à virer du code !!!!
-   
-   
+
+
    !!----------------------------------------------------------------------
 
 
@@ -677,7 +640,7 @@ CONTAINS
       !
    END SUBROUTINE mppscatter
 
-   
+
    SUBROUTINE mpp_delay_sum( cdname, cdelay, y_in, pout, ldlast, kcom )
      !!----------------------------------------------------------------------
       !!                   ***  routine mpp_delay_sum  ***
@@ -701,7 +664,7 @@ CONTAINS
       IF( PRESENT(kcom) )   ilocalcomm = kcom
 
       isz = SIZE(y_in)
-      
+
       IF( narea == 1 .AND. numcom == -1 ) CALL mpp_report( cdname, ld_dlg = .TRUE. )
 
       idvar = -1
@@ -721,7 +684,7 @@ CONTAINS
             todelay(idvar)%y1d(:) = CMPLX(todelay(idvar)%z1d(:), 0., wp)   ! create %y1d, complex variable needed by mpi_sumdd
          END IF
       ENDIF
-      
+
       IF( ndelayid(idvar) == -1 ) THEN         ! first call without restart: define %y1d and %z1d from y_in with blocking allreduce
          !                                       --------------------------
          ALLOCATE(todelay(idvar)%z1d(isz), todelay(idvar)%y1d(isz))   ! allocate also %z1d as used for the restart
@@ -745,7 +708,7 @@ CONTAINS
 
    END SUBROUTINE mpp_delay_sum
 
-   
+
    SUBROUTINE mpp_delay_max( cdname, cdelay, p_in, pout, ldlast, kcom )
       !!----------------------------------------------------------------------
       !!                   ***  routine mpp_delay_max  ***
@@ -755,8 +718,8 @@ CONTAINS
       !!----------------------------------------------------------------------
       CHARACTER(len=*), INTENT(in   )                 ::   cdname  ! name of the calling subroutine
       CHARACTER(len=*), INTENT(in   )                 ::   cdelay  ! name (used as id) of the delayed operation
-      REAL(wp),         INTENT(in   ), DIMENSION(:)   ::   p_in    ! 
-      REAL(wp),         INTENT(  out), DIMENSION(:)   ::   pout    ! 
+      REAL(wp),         INTENT(in   ), DIMENSION(:)   ::   p_in    !
+      REAL(wp),         INTENT(  out), DIMENSION(:)   ::   pout    !
       LOGICAL,          INTENT(in   )                 ::   ldlast  ! true if this is the last time we call this routine
       INTEGER,          INTENT(in   ), OPTIONAL       ::   kcom
       !!
@@ -808,18 +771,18 @@ CONTAINS
 
    END SUBROUTINE mpp_delay_max
 
-   
+
    SUBROUTINE mpp_delay_rcv( kid )
       !!----------------------------------------------------------------------
       !!                   ***  routine mpp_delay_rcv  ***
       !!
-      !! ** Purpose :  force barrier for delayed mpp (needed for restart) 
+      !! ** Purpose :  force barrier for delayed mpp (needed for restart)
       !!
       !!----------------------------------------------------------------------
-      INTEGER,INTENT(in   )      ::  kid 
+      INTEGER,INTENT(in   )      ::  kid
       INTEGER ::   ierr
       !!----------------------------------------------------------------------
-      IF( ndelayid(kid) /= -2 ) THEN  
+      IF( ndelayid(kid) /= -2 ) THEN
 #if ! defined key_mpi2
          IF( ln_timing ) CALL tic_tac( .TRUE., ld_global = .TRUE.)
          CALL mpi_wait( ndelayid(kid), MPI_STATUS_IGNORE, ierr )                        ! make sure todelay(kid) is received
@@ -830,10 +793,10 @@ CONTAINS
       ENDIF
    END SUBROUTINE mpp_delay_rcv
 
-   
+
    !!----------------------------------------------------------------------
    !!    ***  mppmax_a_int, mppmax_int, mppmax_a_real, mppmax_real  ***
-   !!   
+   !!
    !!----------------------------------------------------------------------
    !!
 #  define OPERATION_MAX
@@ -865,7 +828,7 @@ CONTAINS
 #  undef OPERATION_MAX
    !!----------------------------------------------------------------------
    !!    ***  mppmin_a_int, mppmin_int, mppmin_a_real, mppmin_real  ***
-   !!   
+   !!
    !!----------------------------------------------------------------------
    !!
 #  define OPERATION_MIN
@@ -898,7 +861,7 @@ CONTAINS
 
    !!----------------------------------------------------------------------
    !!    ***  mppsum_a_int, mppsum_int, mppsum_a_real, mppsum_real  ***
-   !!   
+   !!
    !!   Global sum of 1D array or a variable (integer, real or complex)
    !!----------------------------------------------------------------------
    !!
@@ -947,7 +910,7 @@ CONTAINS
 
    !!----------------------------------------------------------------------
    !!    ***  mpp_minloc2d, mpp_minloc3d, mpp_maxloc2d, mpp_maxloc3d
-   !!   
+   !!
    !!----------------------------------------------------------------------
    !!
 #  define OPERATION_MINLOC
@@ -991,7 +954,7 @@ CONTAINS
    END SUBROUTINE mppsync
 
 
-   SUBROUTINE mppstop( ldfinal, ld_force_abort ) 
+   SUBROUTINE mppstop( ldfinal, ld_force_abort )
       !!----------------------------------------------------------------------
       !!                  ***  routine mppstop  ***
       !!
@@ -1325,7 +1288,7 @@ CONTAINS
       znorthloc_e(:,:) = 0._wp
       !
       ij = 1 - kextj
-      ! put the last ipj+2*kextj lines of pt2d into znorthloc_e 
+      ! put the last ipj+2*kextj lines of pt2d into znorthloc_e
       DO jj = jpj - ipj + 1 - kextj , jpj + kextj
          znorthloc_e(1:jpi,ij)=pt2d(1:jpi,jj)
          ij = ij + 1
@@ -1589,7 +1552,7 @@ CONTAINS
       IF( PRESENT(ld_dlg) ) ll_dlg = ld_dlg
       !
       ! find the smallest common frequency: default = frequency product, if multiple, choose the larger of the 2 frequency
-      IF( ncom_dttrc /= 1 )   CALL ctl_stop( 'STOP', 'mpp_report, ncom_dttrc /= 1 not coded...' ) 
+      IF( ncom_dttrc /= 1 )   CALL ctl_stop( 'STOP', 'mpp_report, ncom_dttrc /= 1 not coded...' )
       ncom_freq = ncom_fsbc
       !
       IF ( ncom_stp == nit000+ncom_freq ) THEN   ! avoid to count extra communications in potential initializations at nit000
@@ -1641,7 +1604,7 @@ CONTAINS
                WRITE(numcom,'(A, I4, A, A)') ' - ', jj,' times by subroutine ', TRIM(crname_lbc(ji-1))
                jj = 0
             END IF
-            jj = jj + 1 
+            jj = jj + 1
          END DO
          WRITE(numcom,'(A, I4, A, A)') ' - ', jj,' times by subroutine ', TRIM(crname_lbc(n_sequence_lbc))
          WRITE(numcom,*) ' '
@@ -1653,7 +1616,7 @@ CONTAINS
                   WRITE(numcom,'(A, I4, A, A)') ' - ', jj,' times by subroutine ', TRIM(crname_glb(ji-1))
                   jj = 0
                END IF
-               jj = jj + 1 
+               jj = jj + 1
             END DO
             WRITE(numcom,'(A, I4, A, A)') ' - ', jj,' times by subroutine ', TRIM(crname_glb(n_sequence_glb))
             DEALLOCATE(crname_glb)
@@ -1669,7 +1632,7 @@ CONTAINS
                   WRITE(numcom,'(A, I4, A, A)') ' - ', jj,' times by subroutine ', TRIM(crname_dlg(ji-1))
                   jj = 0
                END IF
-               jj = jj + 1 
+               jj = jj + 1
             END DO
             WRITE(numcom,'(A, I4, A, A)') ' - ', jj,' times by subroutine ', TRIM(crname_dlg(n_sequence_dlg))
             DEALLOCATE(crname_dlg)
@@ -1684,7 +1647,7 @@ CONTAINS
       ENDIF
    END SUBROUTINE mpp_report
 
-   
+
    SUBROUTINE tic_tac (ld_tic, ld_global)
 
     LOGICAL,           INTENT(IN) :: ld_tic
@@ -1699,7 +1662,7 @@ CONTAINS
     IF( PRESENT( ld_global ) ) THEN
        IF( ld_global ) ii = 2
     END IF
-    
+
     IF ( ld_tic ) THEN
        tic_wt(ii) = MPI_Wtime()                                                    ! start count tic->tac (waiting time)
        IF ( tic_ct > 0.0_wp ) compute_time = compute_time + MPI_Wtime() - tic_ct   ! cumulate count tac->tic
@@ -1707,10 +1670,10 @@ CONTAINS
        waiting_time(ii) = waiting_time(ii) + MPI_Wtime() - tic_wt(ii)              ! cumulate count tic->tac
        tic_ct = MPI_Wtime()                                                        ! start count tac->tic (waiting time)
     ENDIF
-    
+
    END SUBROUTINE tic_tac
 
-   
+
 #else
    !!----------------------------------------------------------------------
    !!   Default case:            Dummy module        share memory computing
@@ -1745,7 +1708,7 @@ CONTAINS
       REAL(   wp), POINTER, DIMENSION(:) ::  z1d => NULL()
       COMPLEX(wp), POINTER, DIMENSION(:) ::  y1d => NULL()
    END TYPE DELAYARR
-   TYPE( DELAYARR ), DIMENSION(1), PUBLIC  ::   todelay              
+   TYPE( DELAYARR ), DIMENSION(1), PUBLIC  ::   todelay
    INTEGER,  PUBLIC, DIMENSION(1)           ::   ndelayid = -1
    !!----------------------------------------------------------------------
 CONTAINS
@@ -1771,7 +1734,7 @@ CONTAINS
 
    !!----------------------------------------------------------------------
    !!    ***  mppmax_a_int, mppmax_int, mppmax_a_real, mppmax_real  ***
-   !!   
+   !!
    !!----------------------------------------------------------------------
    !!
 #  define OPERATION_MAX
@@ -1803,7 +1766,7 @@ CONTAINS
 #  undef OPERATION_MAX
    !!----------------------------------------------------------------------
    !!    ***  mppmin_a_int, mppmin_int, mppmin_a_real, mppmin_real  ***
-   !!   
+   !!
    !!----------------------------------------------------------------------
    !!
 #  define OPERATION_MIN
@@ -1836,7 +1799,7 @@ CONTAINS
 
    !!----------------------------------------------------------------------
    !!    ***  mppsum_a_int, mppsum_int, mppsum_a_real, mppsum_real  ***
-   !!   
+   !!
    !!   Global sum of 1D array or a variable (integer, real or complex)
    !!----------------------------------------------------------------------
    !!
@@ -1885,7 +1848,7 @@ CONTAINS
 
    !!----------------------------------------------------------------------
    !!    ***  mpp_minloc2d, mpp_minloc3d, mpp_maxloc2d, mpp_maxloc3d
-   !!   
+   !!
    !!----------------------------------------------------------------------
    !!
 #  define OPERATION_MINLOC
@@ -1937,10 +1900,10 @@ CONTAINS
    END SUBROUTINE mpp_delay_max
 
    SUBROUTINE mpp_delay_rcv( kid )
-      INTEGER,INTENT(in   )      ::  kid 
+      INTEGER,INTENT(in   )      ::  kid
       WRITE(*,*) 'mpp_delay_rcv: You should not have seen this print! error?', kid
    END SUBROUTINE mpp_delay_rcv
-   
+
    SUBROUTINE mppstop( ldfinal, ld_force_abort )
       LOGICAL, OPTIONAL, INTENT(in) :: ldfinal    ! source process number
       LOGICAL, OPTIONAL, INTENT(in) :: ld_force_abort    ! source process number
@@ -1956,7 +1919,7 @@ CONTAINS
       INTEGER :: kcom
       WRITE(*,*) 'mpp_comm_free: You should not have seen this print! error?', kcom
    END SUBROUTINE mpp_comm_free
-   
+
 #endif
 
    !!----------------------------------------------------------------------
@@ -1979,7 +1942,7 @@ CONTAINS
 
       ! force to open ocean.output file
       IF( numout == 6 ) CALL ctl_opn( numout, 'ocean.output', 'APPEND', 'FORMATTED', 'SEQUENTIAL', -1, 6, .FALSE. )
-       
+
       WRITE(numout,cform_err)
       IF( PRESENT(cd1 ) )   WRITE(numout,*) TRIM(cd1)
       IF( PRESENT(cd2 ) )   WRITE(numout,*) TRIM(cd2)
@@ -2081,7 +2044,7 @@ CONTAINS
          OPEN( UNIT=knum, FILE=clfile, FORM=cdform, ACCESS=cdacce, STATUS=cdstat                      , ERR=100, IOSTAT=iost )
       ENDIF
       IF( iost /= 0 .AND. TRIM(clfile) == '/dev/null' ) &   ! for windows
-         &  OPEN(UNIT=knum,FILE='NUL', FORM=cdform, ACCESS=cdacce, STATUS=cdstat                      , ERR=100, IOSTAT=iost )   
+         &  OPEN(UNIT=knum,FILE='NUL', FORM=cdform, ACCESS=cdacce, STATUS=cdstat                      , ERR=100, IOSTAT=iost )
       IF( iost == 0 ) THEN
          IF(ldwp) THEN
             WRITE(kout,*) '     file   : ', TRIM(clfile),' open ok'
@@ -2117,7 +2080,7 @@ CONTAINS
             WRITE(*,*) '           we stop. verify the file '
             WRITE(*,*)
          ENDIF
-         CALL FLUSH( kout ) 
+         CALL FLUSH( kout )
          STOP 'ctl_opn bad opening'
       ENDIF
       !
@@ -2139,7 +2102,7 @@ CONTAINS
       !!----------------------------------------------------------------------
       !
       WRITE (clios, '(I5.0)')   kios
-      IF( kios < 0 ) THEN         
+      IF( kios < 0 ) THEN
          CALL ctl_warn( 'end of record or file while reading namelist '   &
             &           // TRIM(cdnam) // ' iostat = ' // TRIM(clios) )
       ENDIF
