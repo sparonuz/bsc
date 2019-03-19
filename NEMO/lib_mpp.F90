@@ -185,7 +185,7 @@ MODULE lib_mpp
 
    LOGICAL, PUBLIC ::   ln_nnogather                !: namelist control of northfold comms
    LOGICAL, PUBLIC ::   l_north_nogather = .FALSE.  !: internal control of northfold comms
-   INTEGER :: mpi_comm_idle
+   INTEGER :: mpi_group_oce
    !!----------------------------------------------------------------------
    !! NEMO/OCE 4.0 , NEMO Consortium (2018)
    !! $Id: lib_mpp.F90 10538 2019-01-17 10:41:10Z clem $
@@ -193,169 +193,102 @@ MODULE lib_mpp
    !!----------------------------------------------------------------------
 CONTAINS
    
-   subroutine mpp_proc_extract(min_n_proc)
-      implicit none 
-      integer, intent(in) :: min_n_proc
-      integer :: ji
-      INTEGER :: ngrp_world, mpi_group_oce, mpi_comm_backup, rank
+   SUBROUTINE mpp_proc_extract(min_n_proc)
+      IMPLICIT NONE 
+      INTEGER, INTENT(in) :: min_n_proc
+      INTEGER :: mpi_group_oce_new, mpi_comm_oce_new
+      INTEGER :: rank_index, rank_vec(min_n_proc)
       INTEGER :: code, ierr
-      LOGICAL :: mpi_was_called
-      integer :: rank_vec(min_n_proc), mpi_comm_appo
-      INTEGER :: myr
-
-      CALL mpi_initialized( mpi_was_called, code )
-      IF( code /= MPI_SUCCESS ) THEN
-        WRITE(*, cform_err)
-        WRITE(*, *) 'lib_mpp: Error in routine mpi_initialized'
-        CALL mpi_abort( mpi_comm_world, code, ierr )
-      ENDIF
-      ! call mpi_comm_rank(mpi_comm_oce, myr, ierr)
-      ! write(0, *) "prima della brillante modifica ", myr
-      ! create a group from MPI_COMM_WORLD, needed for creating the new group
-      call mpi_comm_group (mpi_comm_oce, ngrp_world, code)
+      
+      ! create a group from  mpi_comm_oce
+      CALL mpi_comm_group (mpi_comm_oce, mpi_group_oce, code)
       IF( code /= MPI_SUCCESS ) THEN
         WRITE(*, cform_err)
         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_group'
-        CALL mpi_abort(MPI_COMM_WORLD, code, ierr )
+        CALL mpi_abort(mpi_comm_world, code, ierr )
       ENDIF
       
-      ! ! free the communicator if it was initialized
-      ! call mpi_comm_free(mpi_comm_oce, code)
-      ! IF( code /= MPI_SUCCESS ) THEN
-      !    WRITE(*, cform_err)
-      !    WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
-      !    CALL mpi_abort(MPI_COMM_WORLD, code, ierr )
-      ! ENDIF
-
-      ! creating a group from the global bunch of procs
-      rank_vec(:) = (/ (rank , rank=0, min_n_proc-1) /)
-
-      call mpi_group_incl(ngrp_world, min_n_proc, rank_vec, mpi_group_oce, code)
+      ! fill the vector with the useful ranks
+      rank_vec(:) = (/ (rank_index , rank_index=0, min_n_proc-1) /)
+      
+      ! creating the group of useful procs
+      CALL mpi_group_incl(mpi_group_oce, min_n_proc, rank_vec, mpi_group_oce_new, code)
       IF( code /= MPI_SUCCESS ) THEN
          WRITE(*, cform_err)
          WRITE(*, *) ' lib_mpp: Error in routine mpi_group_incl'
-         CALL mpi_abort(MPI_COMM_WORLD, code, ierr )
+         CALL mpi_abort(mpi_comm_world, code, ierr )
       ENDIF
-      ! write(0, *) "il mio min_n_proc e'", min_n_proc
       
-      ! create the new communicator from the MPI_COMM_WORLD using the new group
-      call mpi_comm_create_group(mpi_comm_oce, mpi_group_oce, 0, mpi_comm_appo, code)
-      !call mpi_comm_create_group(mpi_comm_oce, mpi_group_oce, 0, mpi_comm_appo, code)
+      ! create the new communicator from the mpi_comm_oce using the new group
+      CALL mpi_comm_create_group(mpi_comm_oce, mpi_group_oce_new, 0, mpi_comm_oce_new, code)
       IF( code /= MPI_SUCCESS ) THEN
         WRITE(*, cform_err)
         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_create'
         CALL mpi_abort( MPI_COMM_WORLD, code, ierr )
       ENDIF
-      ! myr = -1
-      ! if(mpi_comm_appo /= mpi_comm_null) call mpi_comm_rank(mpi_comm_appo, myr, ierr)
-      ! write(0, *) "dopo la brillante modifica ", myr
-      ! free the communicator if it was initialized
-      ! call mpi_comm_free(mpi_comm_oce, code)
-      ! IF( code /= MPI_SUCCESS ) THEN
-      !    WRITE(*, cform_err)
-      !    WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
-      !    CALL mpi_abort(MPI_COMM_WORLD, code, ierr )
-      ! ENDIF
-      mpi_comm_oce = mpi_comm_appo
-      if (mpi_comm_oce /= MPI_COMM_NULL) then 
-         CALL mpi_comm_rank( mpi_comm_oce, mpprank, ierr )
-         CALL mpi_comm_size( mpi_comm_oce, mppsize, ierr )
-      end if
-      ! call mpi_comm_free(mpi_comm_appo, code)
-      ! IF( code /= MPI_SUCCESS ) THEN
-      !    WRITE(*, cform_err)
-      !    WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
-      !    CALL mpi_abort(MPI_COMM_WORLD, code, ierr )
-      ! ENDIF
-   end subroutine mpp_proc_extract
- 
-   subroutine mpp_proc_insert
-      implicit none 
-      INTEGER :: mpi_comm_oce_new
-      INTEGER :: mpi_group_oce_new
+     
+      mpi_comm_oce = mpi_comm_oce_new
+   
+   END SUBROUTINE mpp_proc_extract
+
+   SUBROUTINE mpp_proc_insert
+      IMPLICIT NONE 
+      INTEGER :: mpi_comm_oce_new, mpi_group_oce_new
       INTEGER :: code, ierr
-      LOGICAL :: mpi_was_called
       INTEGER :: rank_world(mppsize), rank_oce(mppsize), rank_index, &
                  mpi_group_world,                  &
                  mpi_group_world_size, mpi_group_oce_size
 
-      CALL mpi_initialized( mpi_was_called, code )
+      ! retrieving the total number of procs      
+      CALL mpi_comm_group(mpi_comm_world, mpi_group_world, code)
       IF( code /= MPI_SUCCESS ) THEN
-        WRITE(*, cform_err)
-        WRITE(*, *) 'lib_mpp: Error in routine mpi_initialized'
-        CALL mpi_abort( mpi_comm_world, code, ierr )
+         WRITE(*, cform_err)
+         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_group'
+         CALL mpi_abort( mpi_comm_world, code, ierr )
       ENDIF
       
-      
-      ! call mpi_group_union(mpi_group_oce, mpi_group_idle, mpi_group_oce_new, code)
-      ! IF( code /= MPI_SUCCESS ) THEN
-      !    WRITE(*, cform_err)
-      !    WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
-      !    CALL mpi_abort( mpi_comm_world, code, ierr )
-      ! ENDIF
+      ! creating the total group of procs
+      CALL mpi_group_size(mpi_group_world, mpi_group_world_size, code)
+      IF( code /= MPI_SUCCESS ) THEN
+         WRITE(*, cform_err)
+         WRITE(*, *) ' lib_mpp: Error in routine mpi_group_size'
+         CALL mpi_abort( mpi_comm_world, code, ierr )
+      ENDIF
 
-      CALL mpi_comm_group(mpi_comm_world, mpi_group_world, code)
+      !retrieving the current size of the comm oce
+      CALL mpi_group_size(mpi_group_oce,  mpi_group_oce_size, code)
+      IF( code /= MPI_SUCCESS ) THEN
+         WRITE(*, cform_err)
+         WRITE(*, *) ' lib_mpp: Error in routine mpi_group_size'
+         CALL mpi_abort( mpi_comm_world, code, ierr )
+      ENDIF
       
-      call mpi_group_size(mpi_group_world, mpi_group_world_size, code)
-      call mpi_group_size(mpi_group_oce,  mpi_group_oce_size,   code)
-      
+      ! filling vectors for mapping ranks from local to globa comms
       rank_world(:) = (/ (rank_index, &
                           rank_index = (mpi_group_world_size-mpi_group_oce_size), mpi_group_world_size-1) /)
       rank_oce(:)   = (/ (rank_index, &
                           rank_index = 0, mpi_group_oce_size-1) /)
       
-      call mpi_group_translate_ranks(mpi_group_world, mpi_group_oce_size, rank_world, mpi_group_oce, rank_oce, code)
-      
-      call mpi_comm_create_group(mpi_comm_world, mpi_group_oce, 0, mpi_comm_oce_new, code)
-      ! IF( code /= MPI_SUCCESS ) THEN
-      !    WRITE(*, cform_err)
-      !    WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
-      !    CALL mpi_abort( mpi_comm_world, code, ierr )
-      ! ENDIF
-      ! last call is blocking just among processes in the communicator,
-      ! enforcement of sync is needed
-      !if( mpi_comm_oce /= mpi_comm_null) call mpi_comm_free(mpi_comm_oce, code)
-      mpi_comm_oce = mpi_comm_oce_new
+      ! translating ranks
+      CALL mpi_group_translate_ranks(mpi_group_world, mpi_group_oce_size, rank_world, mpi_group_oce, rank_oce, code)
       IF( code /= MPI_SUCCESS ) THEN
          WRITE(*, cform_err)
-         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_dup'
+         WRITE(*, *) ' lib_mpp: Error in routine mpi_group_translate_ranks'
          CALL mpi_abort( mpi_comm_world, code, ierr )
       ENDIF
       
+      ! recreating the original oce comm with all oce processes
+      CALL mpi_comm_create_group(mpi_comm_world, mpi_group_oce, 0, mpi_comm_oce_new, code)
+      IF( code /= MPI_SUCCESS ) THEN
+         WRITE(*, cform_err)
+         WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_create_group'
+         CALL mpi_abort( mpi_comm_world, code, ierr )
+      ENDIF
+      
+      mpi_comm_oce = mpi_comm_oce_new
+      
+      !mpicommfreeocenew?
    end subroutine mpp_proc_insert
-   ! subroutine mpp_proc_insert
-   !    implicit none 
-   !    INTEGER :: code, ierr
-   !    LOGICAL :: mpi_was_called
-
-   !    CALL mpi_initialized( mpi_was_called, code )
-   !    IF( code /= MPI_SUCCESS ) THEN
-   !      WRITE(*, cform_err)
-   !      WRITE(*, *) 'lib_mpp: Error in routine mpi_initialized'
-   !      CALL mpi_abort( mpi_comm_world, code, ierr )
-   !    ENDIF
-      
-   !    ! free the communicator if it was initialized
-   !    if( mpi_comm_oce /= MPI_COMM_NULL) &
-   !      call mpi_comm_free(mpi_comm_oce, code)
-   !    ! last call is blocking just among processes in the communicator,
-   !    ! enforcement of sync is needed
-   !    call mpi_barrier(MPI_COMM_WORLD, ierr)
-   !    IF( code /= MPI_SUCCESS ) THEN
-   !       WRITE(*, cform_err)
-   !       WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_free'
-   !       CALL mpi_abort( mpi_comm_world, code, ierr )
-   !    ENDIF
-
-   !    CALL mpi_comm_dup( mpi_comm_world, mpi_comm_oce, code)
-
-   !    IF( code /= MPI_SUCCESS ) THEN
-   !       WRITE(*, cform_err)
-   !       WRITE(*, *) ' lib_mpp: Error in routine mpi_comm_dup'
-   !       CALL mpi_abort( mpi_comm_world, code, ierr )
-   !    ENDIF
-      
-   ! end subroutine mpp_proc_insert
 
    FUNCTION mynode( ldtxt, ldname, kumnam_ref, kumnam_cfg, kumond, kstop, localComm )
       !!----------------------------------------------------------------------
