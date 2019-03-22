@@ -1554,7 +1554,7 @@ if [ ${config} == "ORCA2" ] ;  then
     export TEST_NAME="LONG"
     cd ${MAIN_DIR}
     pwd
-    . ./makenemo -m ${CMP_NAM} -n ORCA2 -r ORCA2_ICE_PISCES -j 4 -d OCE del_key 'key_si3 key_top'
+    . ./makenemo -m ${CMP_NAM} -n ORCA2 -r ORCA2_ICE_PISCES -j 8 -d OCE del_key 'key_si3 key_top'
     cd ${SETTE_DIR}
     . ./param.cfg
     . ./all_functions.sh
@@ -1571,43 +1571,24 @@ if [ ${config} == "ORCA2" ] ;  then
     set_namelist namelist_cfg nn_stock 495
     set_namelist namelist_cfg jpni 4
     set_namelist namelist_cfg jpnj 8
-    set_namelist namelist_cfg ln_ctl .false.
-    set_namelist namelist_cfg sn_cfctl%l_config .true.
     set_namelist namelist_cfg sn_cfctl%l_runstat .true.
     set_namelist namelist_cfg sn_cfctl%l_trcstat .true.
     set_namelist namelist_cfg ln_use_calving .true.
-    set_namelist namelist_cfg ln_wave .true.
-    set_namelist namelist_cfg ln_cdgw .true.
-    set_namelist namelist_cfg ln_sdw  .true.
+#    set_namelist namelist_cfg ln_wave .true.
+#    set_namelist namelist_cfg ln_cdgw .true.
+#    set_namelist namelist_cfg ln_sdw  .true.
     set_namelist namelist_cfg nn_sdrift 1
-    set_namelist namelist_cfg ln_stcor .true.
-    set_namelist namelist_cfg ln_tauwoc .true.
-    #
+#    set_namelist namelist_cfg ln_stcor .true.
+#    set_namelist namelist_cfg ln_tauwoc .true.
+#    #
     if [ ${USING_ICEBERGS} == "no" ] ; then set_namelist namelist_cfg ln_icebergs .false. ; fi
-    # for debugging purposes set_namelist namelist_cfg rn_test_box -180.0, 180.0, -90.0, -55.0
-    #
-    set_namelist namelist_ice_cfg ln_icediachk .true.
-    set_namelist namelist_top_cfg ln_trcdta .false.
-    # put ln_ironsed, ln_river, ln_ndepo, ln_dust to false
-    # if not you need input files, and for tests is not necessary
-    set_namelist namelist_pisces_cfg ln_presatm .false.
-    set_namelist namelist_pisces_cfg ln_varpar .false.
-    set_namelist namelist_pisces_cfg ln_dust .false.
-    set_namelist namelist_pisces_cfg ln_solub .false.
-    set_namelist namelist_pisces_cfg ln_river .false.
-    set_namelist namelist_pisces_cfg ln_ndepo .false.
-    set_namelist namelist_pisces_cfg ln_ironsed .false.
-    set_namelist namelist_pisces_cfg ln_ironice .false.
-    set_namelist namelist_pisces_cfg ln_hydrofe .false.
-    # put ln_pisdmp to false : no restoring to global mean value
-    set_namelist namelist_pisces_cfg ln_pisdmp .false.
+
     if [ ${USING_MPMD} == "yes" ] ; then
        set_xio_using_server iodef.xml true
     else
        set_xio_using_server iodef.xml false
     fi
     cd ${SETTE_DIR}
-    echo "OU"
     pwd
     . ./prepare_job.sh input_ORCA2.cfg $NPROC ${TEST_NAME} ${MPIRUN_FLAG} ${JOB_FILE} ${NUM_XIOSERVERS} ${NEMO_VALID}
     pwd 

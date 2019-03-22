@@ -79,4 +79,4 @@ cd ${EXE_DIR}
 # (if any)
 [ -f ./ocean.output ] && mv ./ocean.output ./ocean.output.old
 [ -f ./run.stat ]     && mv ./run.stat     ./run.stat.old
-[ -f ./tracer.stat ]  && mv ./tracer.stat  ./tracer.stat.old
+#[ -f ./tracer.stat ]  && mv ./tracer.stat  ./tracer.stat.old
