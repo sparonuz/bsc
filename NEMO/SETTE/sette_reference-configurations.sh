@@ -388,13 +388,13 @@ if [ ${config} == "ORCA2_ICE_PISCES" ] ;  then
     if [ ${USING_ICEBERGS} == "no" ] ; then set_namelist namelist_cfg ln_icebergs .false. ; fi
     # for debugging purposes set_namelist namelist_cfg rn_test_box -180.0, 180.0, -90.0, -55.0
     #
-    set_namelist namelist_ice_cfg ln_icediachk .true.
-    set_namelist namelist_top_cfg ln_rsttr .true.
-    set_namelist namelist_top_cfg nn_rsttr 2
     set_namelist namelist_cfg cn_ocerst_in \"O2L3P_LONG_00000496_restart\"
-    set_namelist namelist_top_cfg cn_trcrst_in \"O2L3P_LONG_00000496_restart_trc\"
+    set_namelist namelist_ice_cfg ln_icediachk .true.
     set_namelist namelist_ice_cfg cn_icerst_in \"O2L3P_LONG_00000496_restart_ice\"
     set_namelist namelist_top_cfg ln_trcdta .false.
+    set_namelist namelist_top_cfg ln_rsttr .true.
+    set_namelist namelist_top_cfg nn_rsttr 2
+    set_namelist namelist_top_cfg cn_trcrst_in \"O2L3P_LONG_00000496_restart_trc\"
     # put ln_ironsed, ln_river, ln_ndepo, ln_dust
     # if not you need input files, and for tests is not necessary
     set_namelist namelist_pisces_cfg ln_presatm .false.
@@ -1567,10 +1567,12 @@ if [ ${config} == "ORCA2" ] ;  then
     cd ${EXE_DIR}
     set_namelist namelist_cfg cn_exp \"O2L3P_LONG\"
     set_namelist namelist_cfg nn_it000 1
-    set_namelist namelist_cfg nn_itend 993
+    set_namelist namelist_cfg nn_itend 990
     set_namelist namelist_cfg nn_stock 495
     set_namelist namelist_cfg jpni 4
     set_namelist namelist_cfg jpnj 8
+    set_namelist namelist_cfg ln_ctl .false.
+    set_namelist namelist_cfg sn_cfctl%l_config .true.
     set_namelist namelist_cfg sn_cfctl%l_runstat .true.
     set_namelist namelist_cfg sn_cfctl%l_trcstat .true.
     set_namelist namelist_cfg ln_use_calving .true.
@@ -1593,7 +1595,187 @@ if [ ${config} == "ORCA2" ] ;  then
     . ./prepare_job.sh input_ORCA2.cfg $NPROC ${TEST_NAME} ${MPIRUN_FLAG} ${JOB_FILE} ${NUM_XIOSERVERS} ${NEMO_VALID}
     pwd 
     . ${SETTE_DIR}/fcm_job.sh $NPROC ${JOB_FILE} ${INTERACT_FLAG} ${MPIRUN_FLAG}
+   
+    cd ${SETTE_DIR}
+    export TEST_NAME="SHORT"
+    . ./prepare_exe_dir.sh
+    set_valid_dir
+    clean_valid_dir
+    cd ${EXE_DIR}
+    set_namelist namelist_cfg cn_exp \"O2L3P_SHORT\"
+    set_namelist namelist_cfg nn_it000 496
+    set_namelist namelist_cfg nn_itend 990
+    set_namelist namelist_cfg nn_stock 495
+    set_namelist namelist_cfg ln_rstart .true.
+    set_namelist namelist_cfg nn_rstctl 2
+    set_namelist namelist_cfg jpni 4
+    set_namelist namelist_cfg jpnj 8
+    set_namelist namelist_cfg ln_ctl .false.
+    set_namelist namelist_cfg sn_cfctl%l_config .true.
+    set_namelist namelist_cfg sn_cfctl%l_runstat .true.
+    set_namelist namelist_cfg sn_cfctl%l_trcstat .true.
+    set_namelist namelist_cfg nn_test_icebergs -1
+   #  set_namelist namelist_cfg ln_wave .true.
+   #  set_namelist namelist_cfg ln_cdgw .true.
+   #  set_namelist namelist_cfg ln_sdw  .true.
+    set_namelist namelist_cfg nn_sdrift 1
+   #  set_namelist namelist_cfg ln_stcor .true.
+   #  set_namelist namelist_cfg ln_tauwoc .true.
+    #
+    if [ ${USING_ICEBERGS} == "no" ] ; then set_namelist namelist_cfg ln_icebergs .false. ; fi
+    # for debugging purposes set_namelist namelist_cfg rn_test_box -180.0, 180.0, -90.0, -55.0
+    #
+    set_namelist namelist_cfg cn_ocerst_in \"O2L3P_LONG_00000496_restart\"
+   #  set_namelist namelist_ice_cfg ln_icediachk .true.
+   #  set_namelist namelist_ice_cfg cn_icerst_in \"O2L3P_LONG_00000496_restart_ice\"
+   #  set_namelist namelist_top_cfg ln_rsttr .true.
+   #  set_namelist namelist_top_cfg nn_rsttr 2
+   #  set_namelist namelist_top_cfg cn_trcrst_in \"O2L3P_LONG_00000496_restart_trc\"
+   #  set_namelist namelist_top_cfg ln_trcdta .false.
+    # put ln_ironsed, ln_river, ln_ndepo, ln_dust
+    # if not you need input files, and for tests is not necessary
+   #  set_namelist namelist_pisces_cfg ln_presatm .false.
+   #  set_namelist namelist_pisces_cfg ln_varpar .false.
+   #  set_namelist namelist_pisces_cfg ln_dust .false.
+   #  set_namelist namelist_pisces_cfg ln_solub .false.
+   #  set_namelist namelist_pisces_cfg ln_river .false.
+   #  set_namelist namelist_pisces_cfg ln_ndepo .false.
+   #  set_namelist namelist_pisces_cfg ln_ironsed .false.
+   #  set_namelist namelist_pisces_cfg ln_ironice .false.
+   #  set_namelist namelist_pisces_cfg ln_hydrofe .false.
+    # put ln_pisdmp to false : no restoring to global mean value
+   #  set_namelist namelist_pisces_cfg ln_pisdmp .false.
+    for (( i=1; i<=$NPROC; i++)) ; do
+        L_NPROC=$(( $i - 1 ))
+        L_NPROC=`printf "%04d\n" ${L_NPROC}`
+        ln -sf ../LONG/O2L3P_LONG_00000496_restart_${L_NPROC}.nc .
+      #   ln -sf ../LONG/O2L3P_LONG_00000496_restart_trc_${L_NPROC}.nc .
+      #   ln -sf ../LONG/O2L3P_LONG_00000496_restart_ice_${L_NPROC}.nc .
+        if [ ${USING_ICEBERGS} == "yes" ]
+            then
+             ln -sf ../LONG/O2L3P_LONG_icebergs_00000496_restart_${L_NPROC}.nc O2L3P_LONG_00000496_restart_icebergs_${L_NPROC}.nc
+        fi
+    done
+    if [ ${USING_MPMD} == "yes" ] ; then
+       set_xio_using_server iodef.xml true
+    else
+       set_xio_using_server iodef.xml false
+    fi
+    cd ${SETTE_DIR}
+    . ./prepare_job.sh input_ORCA2.cfg $NPROC ${TEST_NAME} ${MPIRUN_FLAG} ${JOB_FILE} ${NUM_XIOSERVERS} ${NEMO_VALID}
+    cd ${SETTE_DIR}
+    . ./fcm_job.sh $NPROC ${JOB_FILE} ${INTERACT_FLAG} ${MPIRUN_FLAG}
 
+    export TEST_NAME="REPRO_4_8"
+    cd ${MAIN_DIR}
+    cd ${SETTE_DIR}
+    . ./param.cfg
+    . ./all_functions.sh
+    . ./prepare_exe_dir.sh
+    set_valid_dir
+    clean_valid_dir
+    JOB_FILE=${EXE_DIR}/run_job.sh
+    NPROC=32
+    if [ -f ${JOB_FILE} ] ; then \rm ${JOB_FILE} ; fi
+    cd ${EXE_DIR}
+    set_namelist namelist_cfg cn_exp \"O2L3P_48\"
+    set_namelist namelist_cfg nn_it000 1
+    set_namelist namelist_cfg nn_itend 990
+    set_namelist namelist_cfg jpni 4
+    set_namelist namelist_cfg jpnj 8
+    set_namelist namelist_cfg ln_ctl .false.
+    set_namelist namelist_cfg sn_cfctl%l_config .true.
+    set_namelist namelist_cfg sn_cfctl%l_runstat .true.
+    set_namelist namelist_cfg sn_cfctl%l_trcstat .true.
+   #  set_namelist namelist_cfg ln_wave .true.
+   #  set_namelist namelist_cfg ln_cdgw .true.
+   #  set_namelist namelist_cfg ln_sdw  .true.
+    set_namelist namelist_cfg nn_sdrift 1
+   #  set_namelist namelist_cfg ln_stcor .true.
+   #  set_namelist namelist_cfg ln_tauwoc .true.
+
+    if [ ${USING_ICEBERGS} == "no" ] ; then set_namelist namelist_cfg ln_icebergs .false. ; fi
+    # for debugging purposes set_namelist namelist_cfg rn_test_box -180.0, 180.0, -90.0, -55.0
+
+   #  set_namelist namelist_top_cfg ln_trcdta .false.
+    # put ln_ironsed, ln_river, ln_ndepo, ln_dust to false
+    # if not you need input files, and for tests is not necessary
+   #  set_namelist namelist_pisces_cfg ln_presatm .false.
+   #  set_namelist namelist_pisces_cfg ln_varpar .false.
+   #  set_namelist namelist_pisces_cfg ln_dust .false.
+   #  set_namelist namelist_pisces_cfg ln_solub .false.
+   #  set_namelist namelist_pisces_cfg ln_river .false.
+   #  set_namelist namelist_pisces_cfg ln_ndepo .false.
+   #  set_namelist namelist_pisces_cfg ln_ironsed .false.
+   #  set_namelist namelist_pisces_cfg ln_ironice .false.
+   #  set_namelist namelist_pisces_cfg ln_hydrofe .false.
+    # put ln_pisdmp to false : no restoring to global mean value
+   #  set_namelist namelist_pisces_cfg ln_pisdmp .false.
+    if [ ${USING_MPMD} == "yes" ] ; then
+       set_xio_using_server iodef.xml true
+    else
+       set_xio_using_server iodef.xml false
+    fi
+    cd ${SETTE_DIR}
+    . ./prepare_job.sh input_ORCA2.cfg $NPROC ${TEST_NAME} ${MPIRUN_FLAG} ${JOB_FILE} ${NUM_XIOSERVERS} ${NEMO_VALID}
+    cd ${SETTE_DIR}
+    . ./fcm_job.sh $NPROC ${JOB_FILE} ${INTERACT_FLAG} ${MPIRUN_FLAG}
+    export TEST_NAME="REPRO_8_4"
+    cd ${MAIN_DIR}
+    cd ${SETTE_DIR}
+    . ./param.cfg
+    . ./all_functions.sh
+    . ./prepare_exe_dir.sh
+    set_valid_dir
+    clean_valid_dir
+    JOB_FILE=${EXE_DIR}/run_job.sh
+    NPROC=32
+    if [ -f ${JOB_FILE} ] ; then \rm ${JOB_FILE} ; fi
+    cd ${EXE_DIR}
+    set_namelist namelist_cfg cn_exp \"O2L3P_84\"
+    set_namelist namelist_cfg nn_it000 1
+    set_namelist namelist_cfg nn_itend 990
+    set_namelist namelist_cfg jpni 8
+    set_namelist namelist_cfg jpnj 4
+    set_namelist namelist_cfg ln_ctl .false.
+    set_namelist namelist_cfg sn_cfctl%l_config .true.
+    set_namelist namelist_cfg sn_cfctl%l_runstat .true.
+    set_namelist namelist_cfg sn_cfctl%l_trcstat .true.
+   #  set_namelist namelist_cfg ln_wave .true.
+   #  set_namelist namelist_cfg ln_cdgw .true.
+   #  set_namelist namelist_cfg ln_sdw  .true.
+    set_namelist namelist_cfg nn_sdrift 1
+   #  set_namelist namelist_cfg ln_stcor .true.
+   #  set_namelist namelist_cfg ln_tauwoc .true.
+
+    if [ ${USING_ICEBERGS} == "no" ] ; then set_namelist namelist_cfg ln_icebergs .false. ; fi
+    # for debugging purposes set_namelist namelist_cfg rn_test_box -180.0, 180.0, -90.0, -55.0
+
+   #  set_namelist namelist_top_cfg ln_trcdta .false.
+    # put ln_ironsed, ln_river, ln_ndepo, ln_dust to false
+    # if not you need input files, and for tests is not necessary
+   #  set_namelist namelist_pisces_cfg ln_presatm .false.
+   #  set_namelist namelist_pisces_cfg ln_varpar .false.
+   #  set_namelist namelist_pisces_cfg ln_dust .false.
+   #  set_namelist namelist_pisces_cfg ln_solub .false.
+   #  set_namelist namelist_pisces_cfg ln_river .false.
+   #  set_namelist namelist_pisces_cfg ln_ndepo .false.
+   #  set_namelist namelist_pisces_cfg ln_ironsed .false.
+   #  set_namelist namelist_pisces_cfg ln_ironice .false.
+   #  set_namelist namelist_pisces_cfg ln_hydrofe .false.
+    # put ln_pisdmp to false : no restoring to global mean value
+   #  set_namelist namelist_pisces_cfg ln_pisdmp .false.
+    if [ ${USING_MPMD} == "yes" ] ; then
+       set_xio_using_server iodef.xml true
+    else
+       set_xio_using_server iodef.xml false
+    fi
+    cd ${SETTE_DIR}
+    . ./prepare_job.sh input_ORCA2.cfg $NPROC ${TEST_NAME} ${MPIRUN_FLAG} ${JOB_FILE} ${NUM_XIOSERVERS} ${NEMO_VALID}
+    cd ${SETTE_DIR}
+    . ./fcm_job.sh $NPROC ${JOB_FILE} ${INTERACT_FLAG} ${MPIRUN_FLAG}
+
+    
 fi
 
 
