@@ -1,6 +1,6 @@
 #!/bin/bash 
 #!
-#SBATCH --ntasks 32 
+#SBATCH --ntasks NPROCS 
 #SBATCH --job-name ORCA2_SETTE_TEST 
 #SBATCH --output log_%jo 
 #SBATCH --error  log_%j.e

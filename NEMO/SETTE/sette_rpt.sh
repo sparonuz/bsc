@@ -12,7 +12,7 @@
 
 function get_dorv() {
   if [ $lastchange == 'old' ] ; then 
-   dorv=`ls -1rt $vdir/$nam/$mach/ | tail -1l `
+    dorv=`ls -1rt $vdir/$nam/$mach/ | tail -1l `
     dorv=`echo $dorv | sed -e 's:.*/::'`
   else
     dorv=$lastchange
@@ -138,16 +138,14 @@ function resttest() {
     f2s=$vdir/$nam/$mach/$dorv/SHORT/run.stat
     f2t=$vdir/$nam/$mach/$dorv/SHORT/tracer.stat
 
-    if  [ ! -f $f1s ] ; then 
     #if  [ ! -f $f1s ] &&  [ ! -f $f1t ] ; then 
-      echo "QQQ" $f1s 
+    if  [ ! -f $f1s ] ; then 
       printf "%-27s %s\n" $nam " incomplete test";
       return; 
     fi
     #if  [ ! -f $f2s ] &&  [ ! -f $f2t ] ; then 
     if  [ ! -f $f2s ] ; then 
-      echo "RRR" $f1s 
-      printf "%-27s %s\n" $nam " incomplete test";
+      printf "%-27s %s\n" $nam $f2s"  incomplete test";
       return; 
     fi
 #
@@ -182,36 +180,36 @@ function resttest() {
 #
 # Check tracer.stat files (if they exist)
 #
-#    if  [  -f $f1t ] && [  -f $f2t ]; then
-#      nl=(`wc -l $f2t`)
-#      tail -${nl[0]} $f1t > f1.tmp$$
-#      cmp -s f1.tmp$$ $f2t
-#      if [ $? == 0 ]; then
-#        if [ $pass == 0 ]; then 
-#          printf "%-27s %s %s\n" $nam  " tracer.stat restartability  passed : " $dorv
-#        fi
-#      else
-#        printf "%-27s %s %s\n" $nam  " tracer.stat restartability  FAILED : " $dorv 
-##
-## Offer view of differences on the second pass
-##
-#        if [ $pass == 1 ]; then
-#          echo "<return> to view tracer.stat differences"
-#          read y
-#          sdiff f1.tmp$$ $f2t
-##
-## Only offer ocean.output view if it has not been viewed previously
-##
-#          if [ $done_oce == 0 ]; then
-#            echo "<return> to view ocean.output differences"
-#            read y
-#            sdiff $f1o $f2o | grep "|"
-#          fi
-#          echo "<return> to continue"
-#          read y
-#        fi
-#      fi
-#    fi
+    if  [  -f $f1t ] && [  -f $f2t ]; then
+      nl=(`wc -l $f2t`)
+      tail -${nl[0]} $f1t > f1.tmp$$
+      cmp -s f1.tmp$$ $f2t
+      if [ $? == 0 ]; then
+        if [ $pass == 0 ]; then 
+          printf "%-27s %s %s\n" $nam  " tracer.stat restartability  passed : " $dorv
+        fi
+      else
+        printf "%-27s %s %s\n" $nam  " tracer.stat restartability  FAILED : " $dorv 
+#
+# Offer view of differences on the second pass
+#
+        if [ $pass == 1 ]; then
+          echo "<return> to view tracer.stat differences"
+          read y
+          sdiff f1.tmp$$ $f2t
+#
+# Only offer ocean.output view if it has not been viewed previously
+#
+          if [ $done_oce == 0 ]; then
+            echo "<return> to view ocean.output differences"
+            read y
+            sdiff $f1o $f2o | grep "|"
+          fi
+          echo "<return> to continue"
+          read y
+        fi
+      fi
+    fi
     rm f1.tmp$$
   fi
 }
@@ -230,7 +228,6 @@ function reprotest(){
 #
 # check if directory is here
   if [ ! -d $vdir/$nam/$mach/$dorv ]; then
-    echo "aquiiiiiiiiiiiii" $vdir/$nam/$mach/$dorv 
     printf "%-27s %s %s\n" $nam  " directory                  MISSING : " $dorv
     return
   fi
@@ -249,12 +246,14 @@ function reprotest(){
     f2s=$vdir/$nam/$mach/$dorv/$rep2/run.stat
     f2t=$vdir/$nam/$mach/$dorv/$rep2/tracer.stat
 
-    if  [ ! -f $f1s ] && [ ! -f $f1t ] ; then 
-      printf "%-27s %s\n" $nam " incomplete test";
+    #if  [ ! -f $f1s ] && [ ! -f $f1t ] ; then 
+    if  [ ! -f $f1s ]  ; then 
+      printf "%-27s %s\n" $f1s " incomplete test";
       return; 
     fi
-    if  [ ! -f $f2s ] && [ ! -f $f2t ] ; then 
-      printf "%-27s %s\n" $nam " incomplete test";
+    #if  [ ! -f $f2s ] && [ ! -f $f2t ] ; then 
+    if  [ ! -f $f2s ] ; then 
+      printf "%-27s %s\n" $f2s " incomplete test";
       return; 
     fi
 #
@@ -333,7 +332,7 @@ function runcmpres(){
 #
 # check if reference directory is present
   if [ ! -d $vdirref/$nam/$mach/$dorvref ]; then
-    printf "%-27s %s\n" $nam " REFERENCE directory at $dorvref is MISSING"
+    printf "%-27s %s\n" $vdirref/$nam/$mach/$dorvref " REFERENCE directory at $dorvref is MISSING"
     return
   fi
   if [ ! -d $vdir/$nam/$mach/$dorv ]; then
@@ -344,18 +343,16 @@ function runcmpres(){
 #
   if [ -d $vdir/$nam/$mach/$dorv ]; then
     f1s=$vdir/$nam/$mach/$dorv/LONG/run.stat
-    #f1t=$vdir/$nam/$mach/$dorv/LONG/tracer.stat
+    f1t=$vdir/$nam/$mach/$dorv/LONG/tracer.stat
     f2s=$vdirref/$nam/$mach/$dorvref/LONG/run.stat
-    #f2t=$vdirref/$nam/$mach/$dorvref/LONG/tracer.stat
-    #if  [ ! -f $f1s ] && [ ! -f $f1t ] ; then
-    if  [ ! -f $f1s ]
-    then
+    f2t=$vdirref/$nam/$mach/$dorvref/LONG/tracer.stat
+#    if  [ ! -f $f1s ] && [ ! -f $f1t ] ; then
+    if  [ ! -f $f1s ]  ; then
       printf "%-20s %s\n" $nam " incomplete test";
       return;
     fi
-   # if  [ ! -f $f2s ] && [ ! -f $f2t ] ; then
-    if  [ ! -f $f2s ] 
-    then
+#    if  [ ! -f $f2s ] && [ ! -f $f2t ] ; then
+    if  [ ! -f $f2s ]  ; then
       printf "%-20s %s\n" $nam " incomplete test";
       return;
     fi
@@ -385,24 +382,24 @@ function runcmpres(){
     fi
     # Check tracer.stat files (if they exist)
 #
-#    if  [ -f $f1t ] && [ -f $f2t ] ; then
-#      cmp -s $f1t $f2t
-#      if [ $? == 0 ]; then
-#        if [ $pass == 0 ]; then          
-#          printf "%-20s %s %s\n" $nam  " tracer.stat files are identical "
-#        fi
-#      else
-#        printf "%-20s %s %s\n" $nam  " tracer.stat files are DIFFERENT "
+    if  [ -f $f1t ] && [ -f $f2t ] ; then
+      cmp -s $f1t $f2t
+      if [ $? == 0 ]; then
+        if [ $pass == 0 ]; then          
+          printf "%-20s %s %s\n" $nam  " tracer.stat files are identical "
+        fi
+      else
+        printf "%-20s %s %s\n" $nam  " tracer.stat files are DIFFERENT "
 #
-## Offer view of differences on the second pass
-##
-#        if [ $pass == 1 ]; then
-#          echo "<return> to view tracer.stat differences"
-#          read y
-#          sdiff $f1t $f2t
-#        fi
-#      fi
-#    fi
+# Offer view of differences on the second pass
+#
+        if [ $pass == 1 ]; then
+          echo "<return> to view tracer.stat differences"
+          read y
+          sdiff $f1t $f2t
+        fi
+      fi
+    fi
   fi
 }
 
@@ -429,8 +426,11 @@ function runtest(){
     for tdir in $rep1 ; do
        f1o=$vdir/$nam/$mach/$dorv/$tdir/ocean.output
        if  [ ! -f $f1o ] ; then
-          if [ $pass == 0 ]; then printf "%-27s %s %s\n" $nam " ocean.output               MISSING : " $dorv ; fi
-          return;
+          if [ $pass == 0 ]
+          then 
+           echo "the ocean missing is... " $f1o
+           printf "%-27s %s %s\n" $nam " ocean.output               MISSING : " $dorv ; fi
+           return;
        else 
           nerr=`grep 'E R R O R' $f1o | wc -l`
           if [[ $nerr > 0 ]]; then
@@ -447,7 +447,10 @@ function runtest(){
        fi
     done
   else
-    if [ $pass == 0 ]; then printf "%-27s %s %s\n" $nam  " directory                  MISSING : " $dorv ; fi
+    if [ $pass == 0 ]
+    then 
+      printf "%-27s %s %s\n" $nam  " directory                  MISSING : " $dorv 
+    fi
   fi
 }
 
@@ -513,8 +516,7 @@ function identictest(){
 #
 # LOAD param variable (COMPILER, NEMO_VALIDATION_DIR, SVN_CMD)
   SETTE_DIR=$(cd $(dirname "$0"); pwd)
-#  MAIN_DIR=$(dirname $SETTE_DIR)
-  MAIN_DIR=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/
+  MAIN_DIR=$(dirname $SETTE_DIR)
   . ./param.cfg
 
   mach=${COMPILER}
@@ -576,32 +578,28 @@ do
 # done
 #
 # Restartability test
-# echo ""
-# echo "   !----restart----!   "
-# for restart_test in WGYRE_PISCES_ST WORCA2_ICE_PISCES_ST WORCA2_OFF_PISCES_ST WAMM12_ST WORCA2_SAS_ICE_ST WAGRIF_DEMO_ST WSPITZ12_ST WISOMIP_ST WOVERFLOW_ST WLOCK_EXCHANGE_ST WVORTEX_ST WICE_AGRIF_ST 
-# do
-#   resttest $NEMO_VALID $restart_test $pass
-# done
  echo ""
  echo "   !----restart----!   "
- for restart_test in WORCA2 
+# for restart_test in WGYRE_PISCES_ST WORCA2_ICE_PISCES_ST WORCA2_OFF_PISCES_ST WAMM12_ST WORCA2_SAS_ICE_ST WAGRIF_DEMO_ST WSPITZ12_ST WISOMIP_ST WOVERFLOW_ST WLOCK_EXCHANGE_ST WVORTEX_ST WICE_AGRIF_ST 
+ for restart_test in WORCA2_jpnij #WORCA2
  do
    resttest $NEMO_VALID $restart_test $pass
  done
 #
 # Reproducibility tests
-# echo ""
-# echo "   !----repro----!   "
-# for repro_test in WGYRE_PISCES_ST WORCA2_ICE_PISCES_ST WORCA2_OFF_PISCES_ST WAMM12_ST WORCA2_SAS_ICE_ST WORCA2_ICE_OBS_ST WAGRIF_DEMO_ST WSPITZ12_ST WISOMIP_ST WVORTEX_ST WICE_AGRIF_ST
-# do
-#   reprotest $NEMO_VALID $repro_test $pass
-# done
-#
-## AGRIF special check to ensure results are unchanged with and without key_agrif
-# echo ""
-# echo "   !----agrif check----!   "
-# dir1=WAGRIF_DEMO_NOAGRIF_ST
-# dir2=WAGRIF_DEMO_ST
+ echo ""
+ echo "   !----repro----!   "
+ #for repro_test in WGYRE_PISCES_ST WORCA2_ICE_PISCES_ST WORCA2_OFF_PISCES_ST WAMM12_ST WORCA2_SAS_ICE_ST WORCA2_ICE_OBS_ST WAGRIF_DEMO_ST WSPITZ12_ST WISOMIP_ST WVORTEX_ST WICE_AGRIF_ST
+ for repro_test in WORCA2_jpnij #WORCA2
+ do
+   reprotest $NEMO_VALID $repro_test $pass
+ done
+
+# AGRIF special check to ensure results are unchanged with and without key_agrif
+ echo ""
+ echo "   !----agrif check----!   "
+ dir1=WAGRIF_DEMO_NOAGRIF_ST
+ dir2=WAGRIF_DEMO_ST
 # identictest $NEMO_VALID $dir1 $dir2 $pass 
 #
 # before/after tests
@@ -619,8 +617,8 @@ do
      echo 'and'
      echo "REFERENCE directory : $NEMO_VALID_REF at rev $NEMO_REV_REF"
      echo ''
-     #for repro_test in WGYRE_PISCES_ST WORCA2_ICE_PISCES_ST WORCA2_OFF_PISCES_ST WAMM12_ST WISOMIP_ST WORCA2_SAS_ICE_ST WAGRIF_DEMO_ST WSPITZ12_ST WISOMIP_ST WVORTEX_ST WICE_AGRIF_ST
-     for repro_test in WORCA2
+#     for repro_test in WGYRE_PISCES_ST WORCA2_ICE_PISCES_ST WORCA2_OFF_PISCES_ST WAMM12_ST WISOMIP_ST WORCA2_SAS_ICE_ST WAGRIF_DEMO_ST WSPITZ12_ST WISOMIP_ST WVORTEX_ST WICE_AGRIF_ST
+     for repro_test in WORCA2_jpnij #WORCA2
      do
        runcmpres $NEMO_VALID $repro_test $NEMO_VALID_REF $NEMO_REV_REF $pass
      done

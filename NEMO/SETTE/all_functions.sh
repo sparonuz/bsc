@@ -114,7 +114,7 @@ clean_valid_dir () {
    if [ -d $NEMO_VALID ] ; then
       [ -f ${NEMO_VALID}/ocean.output ] && mv ${NEMO_VALID}/ocean.output ${NEMO_VALID}/ocean.output_old
       [ -f ${NEMO_VALID}/run.stat ]     && mv ${NEMO_VALID}/run.stat     ${NEMO_VALID}/run.stat_old
-#      [ -f ${NEMO_VALID}/tracer.stat ]  && mv ${NEMO_VALID}/tracer.stat  ${NEMO_VALID}/tracer.stat_old
+      [ -f ${NEMO_VALID}/tracer.stat ]  && mv ${NEMO_VALID}/tracer.stat  ${NEMO_VALID}/tracer.stat_old
    fi
 }
 
@@ -272,13 +272,13 @@ echo "TOOLS directory is : ${TOOLS_DIR}"
 	echo "problem in looking for ocean.output file in ${NEMO_VALIDATION_DIR} directory"  >> ${SETTE_DIR}/output.sette
 	echo "ocean.output IS NOT in ${NEMO_VALIDATION_DIR} directory" 
     fi
-#    if [ -n "$(ls ${NEMO_VALIDATION_DIR}/*tracer.stat*)" ] ; then
-#        echo "moved tracer.stat in ${NEMO_VALIDATION_DIR} directory"  >> ${SETTE_DIR}/output.sette
-#        echo "moved tracer.stat in ${NEMO_VALIDATION_DIR} directory"
-#    else
-#        echo "problem in looking for tracer.stat file in ${NEMO_VALIDATION_DIR} directory"  >> ${SETTE_DIR}/output.sette
-#        echo "tracer.stat IS NOT in ${NEMO_VALIDATION_DIR} directory"
-#    fi
+ #   if [ -n "$(ls ${NEMO_VALIDATION_DIR}/*tracer.stat*)" ] ; then
+ #       echo "moved tracer.stat in ${NEMO_VALIDATION_DIR} directory"  >> ${SETTE_DIR}/output.sette
+ #       echo "moved tracer.stat in ${NEMO_VALIDATION_DIR} directory"
+ #   else
+ #       echo "problem in looking for tracer.stat file in ${NEMO_VALIDATION_DIR} directory"  >> ${SETTE_DIR}/output.sette
+ #       echo "tracer.stat IS NOT in ${NEMO_VALIDATION_DIR} directory"
+ #   fi
 }
 
 #############################################################
