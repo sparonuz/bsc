@@ -48,9 +48,19 @@ DDT=False
 #extrae variables
 export EXTRAE=False
 #export EXTRAE=True
+
+#activate ln_ctl flag
+#DIAGNOSTIC=True
+DIAGNOSTIC=False
+
 if [[ $RESTART == True ]]
 then
   restart_files=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_opt
+fi
+
+if [[ $DIAGNOSTIC == True ]]
+then
+  sed -ri 's/(.)(ln_ctl)(.*)/   \2    = .true. /' namelist_cfg
 fi
 
 if [[ $EXTRAE == True ]]
