@@ -1,0 +1,9 @@
+modification to the sette folder to make it work.
+Just start an interactive session in MN4, and then run
+./sette.sh
+in the param.cfg the NEMO_VALIDATION_REF is supposed to be an old run of the sette test case, or a run on the original code.
+typically for testing modification do like 
+run sette on a TEST_CONFIGS with the original code with 
+NEMO_VALIDATION_REF=/path/to/reference/sette/results
+NEMO_REV_REF=0000
+then put NEMO_VALIDATION_REF and the NEMO_REV_REF pointing to the just run test and put the TEST_CONFIGS poiting to the new code.
