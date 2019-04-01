@@ -237,6 +237,7 @@ CONTAINS
          WRITE(ctmp4,9002) '   BUT we had to keep ', mppsize - inijmin, ' land subdomains that are useless...'
          CALL ctl_warn( 'mpp_init:', '~~~~~~~~ ', ctmp1, ctmp2, ctmp3, ctmp4, ' ', '    --- YOU ARE WASTING CPU... ---', ' ' )
          call mpp_proc_extract(inijmin)
+         jpnij = inijmin
       ELSE   ! mppsize = inijmin
          IF(lwp) THEN
             IF(llbest) WRITE(numout,*) 'mpp_init: You use an optimal domain decomposition'
@@ -385,20 +386,6 @@ CONTAINS
             ipproc(ii,ij) = icont
             iin(icont+1) = ii
             ijn(icont+1) = ij
-         ENDIF
-      END DO
-      ! if needed add some land subdomains to reach jpnij active subdomains
-      i2add = jpnij - inijmin
-      DO jarea = 1, jpni*jpnj
-         iarea0 = jarea - 1
-         ii = 1 + MOD(iarea0,jpni)
-         ij = 1 +     iarea0/jpni
-         IF( .NOT. llisoce(ii,ij) .AND. i2add > 0 ) THEN
-            icont = icont + 1
-            ipproc(ii,ij) = icont
-            iin(icont+1) = ii
-            ijn(icont+1) = ij
-            i2add = i2add - 1
          ENDIF
       END DO
       nfipproc(:,:) = ipproc(:,:)
