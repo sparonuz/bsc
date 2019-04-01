@@ -185,7 +185,7 @@ MODULE lib_mpp
 
    LOGICAL, PUBLIC ::   ln_nnogather                !: namelist control of northfold comms
    LOGICAL, PUBLIC ::   l_north_nogather = .FALSE.  !: internal control of northfold comms
-   INTEGER :: mpi_group_oce
+   INTEGER :: mpi_group_oce, optimal = 0
    !!----------------------------------------------------------------------
    !! NEMO/OCE 4.0 , NEMO Consortium (2018)
    !! $Id: lib_mpp.F90 10538 2019-01-17 10:41:10Z clem $
@@ -228,7 +228,7 @@ CONTAINS
       ENDIF
 
       mpi_comm_oce = mpi_comm_oce_new
-
+      optimal = -1
    END SUBROUTINE mpp_proc_extract
 
    SUBROUTINE mpp_proc_insert
@@ -236,7 +236,9 @@ CONTAINS
       INTEGER :: mpi_comm_oce_new
       INTEGER :: code, ierr
       INTEGER :: mpi_group_world
-
+      
+      if ( .NOT. (optimal == -1)) return
+      
       !THIS IS JUST A BUGFIX: unless this call is not done intel_mpi is not segfaulting
       CALL mpi_comm_group(mpi_comm_world, mpi_group_world, code)
 
