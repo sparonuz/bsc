@@ -23,7 +23,6 @@ do
     fi
   done
 done
-echo ${f_proc_array[@]} ${f_array[@]}
 module load python
 python plot.py  ${f_proc_array[@]} ${f_array[@]}
 

@@ -8,9 +8,8 @@ from matplotlib import pyplot as plt
 repetition= int(len(sys.argv)/2)
 f_proc=[]
 f_time_step = []
-print(repetition)
 colors = []
-colors=['b--','r--', 'gs','ys']
+colors=['bs','gs','cs','ms','ys' ]
 
 fig, ax = plt.subplots()
 
@@ -30,17 +29,20 @@ for i_rep in range(0 , repetition):
   std_dev = std_dev / std_dev[0]
   
   ideal_curve =np.zeros(n_cores.shape[0])
-  print(f_proc, f_time_step,n_cores.shape,time_step.shape)
   for i in range(1, n_cores.shape[0]+1):
     ideal_curve[i-1] = n_cores[0]*1./n_cores[i-1]
 
-#  colors.append('%06X' % randint(0, 0xFFFFFF))
-#  colors[i_rep] = '#'+ colors[i_rep] 
-  print(colors)
+  if i_rep > len(colors)-1 :
+    colors.append('%06X' % randint(0, 0xFFFFFF))
+    colors[i_rep] = '#'+ colors[i_rep] 
+ 
   ax.plot(n_cores, real_time, colors[i_rep])
-  
-#ax.plot(n_cores, real_time, 'bs', n_cores, ideal_curve, 'r--', n_cores, std_dev, 'b--')
-ax.plot(n_cores, ideal_curve, 'g--')
+
+
+line, = ax.plot(n_cores, ideal_curve, 'r--', label='Ideal Scaling')
+
+ax.legend()
 ax.set(xlabel='N cores', ylabel='Normalized time(s)',  title='MN4 scaling curve NEMO4')
 ax.grid()
+
 plt.show()
