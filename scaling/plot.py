@@ -12,7 +12,8 @@ colors = []
 colors=['bs','gs','cs','ms','ys' ]
 
 fig, ax = plt.subplots()
-
+time_step = 900.
+factor_sec_2_SYPD = time_step / 365.
 for i_rep in range(0 , repetition):
   f_proc.append(sys.argv[i_rep+1])
   f_time_step.append(sys.argv[repetition + i_rep + 1])
@@ -23,26 +24,31 @@ for i_rep in range(0 , repetition):
     time_step[:, i] = time_step[:, i+1] - time_step[:, i]
   
   real_time =  np.mean(time_step[:,5:-5], axis=1)
-  real_time = real_time/real_time[0]
+  # real_time = real_time/real_time[0]
+  #CONVERSION 
+  real_time = factor_sec_2_SYPD/            real_time  
+  #real_time = real_time / factor_sec_2_SYPD
   
   std_dev = np.std(time_step[:,5:-5], axis=1)
-  std_dev = std_dev / std_dev[0]
-  
-  ideal_curve =np.zeros(n_cores.shape[0])
-  for i in range(1, n_cores.shape[0]+1):
-    ideal_curve[i-1] = n_cores[0]*1./n_cores[i-1]
+  #std_dev = std_dev / std_dev[0]
 
   if i_rep > len(colors)-1 :
     colors.append('%06X' % randint(0, 0xFFFFFF))
     colors[i_rep] = '#'+ colors[i_rep] 
- 
+   
   ax.plot(n_cores, real_time, colors[i_rep])
+  
 
+ideal_curve = np.zeros(n_cores.shape[0])
+for i in range(0, n_cores.shape[0]):
+  ideal_curve[i] = real_time[0] * (i+1)
+  #ideal_curve[i-1] = n_cores[0]*1./n_cores[i-1]
 
+#ideal_curve =  factor_sec_2_SYPD/ideal_curve
 line, = ax.plot(n_cores, ideal_curve, 'r--', label='Ideal Scaling')
 
 ax.legend()
-ax.set(xlabel='N cores', ylabel='Normalized time(s)',  title='MN4 scaling curve NEMO4')
+ax.set(xlabel='N cores', ylabel='SYPD',  title='MN4 scaling curve NEMO4')
 ax.grid()
 
 plt.show()
