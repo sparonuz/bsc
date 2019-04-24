@@ -29,7 +29,6 @@ do
 
   for folder in ${i_experiment[@]} 
   do
-    echo $folder
     echo $folder |  cut -d _ -f 3  >> $f_proc 
     time_spent=($(cat $folder/steps.timing  | awk '{print $2}'))
     echo ${time_spent[@]} >> $f_time_step
