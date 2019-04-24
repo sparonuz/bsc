@@ -16,6 +16,8 @@ do
   then
     echo -e "No repetition n "${experiment}"_"$repetition" found.\nAborting" 
     exit 1
+  else
+    i_experiment=(`ls -v | grep $experiment"_"$repetition`)
   fi 
  
   f_proc='f_proc'$repetition'.txt'
@@ -25,17 +27,12 @@ do
   cat /dev/null > $f_proc
   cat /dev/null > $f_time_step
 
-  for NOP in `seq 48 48 2304`
+  for folder in ${i_experiment[@]} 
   do
-
-    NEMO_PROC=$((NOP/48*46))
-    folder=$experiment_${repetition}_${NEMO_PROC}
-    if [[ -d $folder ]]
-    then 
-      time_spent=($(cat $folder/steps.timing  | awk '{print $2}'))
-      echo $NEMO_PROC >> $f_proc 
-      echo ${time_spent[@]} >> $f_time_step
-    fi
+    echo $folder
+    echo $folder |  cut -d _ -f 3  >> $f_proc 
+    time_spent=($(cat $folder/steps.timing  | awk '{print $2}'))
+    echo ${time_spent[@]} >> $f_time_step
   done
 done
 module load python
