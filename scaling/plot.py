@@ -26,12 +26,12 @@ for i_rep in range(0 , repetition):
 
   n_cores.append( np.genfromtxt(f_proc[i_rep]))
   time_step.append( np.genfromtxt(f_time_step[i_rep]))
+  if( min_ncores == 0 ) : min_ncores = n_cores[i_rep][0]  
+  min_ncores = min(min_ncores, n_cores[i_rep][0])
+  max_ncores = max(max_ncores, n_cores[i_rep][-1])
 
-n_cores    = np.asarray(n_cores)
-time_step  = np.asarray(time_step)
-
-min_ncores = int(np.amin(n_cores[:, 0]))
-max_ncores = int(np.amax(n_cores[:, -1]))
+min_ncores = int(min_ncores)
+max_ncores = int(max_ncores)
 
 n_max_pts = 15 
 n_cores_id = np.linspace(min_ncores, max_ncores, n_max_pts)
