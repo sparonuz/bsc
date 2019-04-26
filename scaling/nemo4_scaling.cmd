@@ -9,14 +9,14 @@
 #SBATCH --error  efficiency_NOP_%j.e
 ##SBATCH -R "span[ptile=16]"
 #SBATCH --time 30:00
-#SBATCH --qos=debug
+#SBATCH --qos=QUEUE
 
 cd $SLURM_SUBMIT_DIR
 
 # Replace the number of resources used for NEMO and XIOS
 #ACTUAL_PROC=$((NOP/48*46))
 NEMO_PROC=$((NOP/48*46))
-TIME_STEP=12
+time_step=TIME_STEP
 
 # Export extrae variable (for the wrapper to know if it is activated)
 XIOS=False
@@ -27,34 +27,41 @@ then
  XIOS_PROC=46 
 fi
 
+ice=ICE
+
+
 set -xv
 
 exec_name=nemo
 #exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_scorep/EXP00/
 #exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_fine_f/EXP00/
-exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_fine_f_3.5.4/EXP00/
+#exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_fine_f_3.5.4/EXP00/
+exec_folder=EXEC_FOLDER
 #exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2/EXP00/
 
 #Create the new folder
 #exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_ref
-exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/eOrca025_opt_$NEMO_PROC
+exp_folder=EXP_FOLDER
+#exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/Orca025_4_$NEMO_PROC
 
 #Input files
-xml_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/eORCA025/xml/
-netCDF_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/eORCA025/input_files/
-namelist_folder=$netCDF_folder
+xml_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/Miguel_input_ORCA025/
+netCDF_folder=$xml_folder
+namelist_folder=$xml_folder
 
 #Restart mode
 #RESTART=True
 RESTART=False
+
+output=OUTPUT
 
 #Debug mode
 #DDT=True
 DDT=False
 
 #extrae variables
-#export EXTRAE=False
-export EXTRAE=True
+export EXTRAE=False
+#export EXTRAE=True
 
 #activate ln_ctl flag
 #DIAGNOSTIC=True
@@ -68,8 +75,8 @@ fi
 if [[ $EXTRAE == True ]]
 then 
   #extrae_home=/apps/BSCTOOLS/extrae/3.5.2/impi_2017_4/
-  extrae_home=/gpfs/projects/bsc32/cs_collaboration/extrae-3.6.1-uf-fix/install-impi-no-dladdr
-  extrae_xml=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/EFFICIENCY_NEMO4_func/detailed_trace_basic.xml
+  extrae_home=/apps/BSCTOOLS/extrae/3.5.4/impi_2018_1/
+  extrae_xml=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/detailed_trace_basic.xml
 #  extrae_xml=/gpfs/scratch/bsc32/bsc32402/NEMO4/Orca2-r10610/detailed_trace_basic.xml
   function_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_scorep/extrae_functions_for_xml.txt
 fi
@@ -90,7 +97,7 @@ then
 fi
 
 #file that contains version of modules to load
-impi_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/Orca2-r10610/impi.env
+#impi_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/Orca2-r10610/impi.env
 
 #Create exp folder
 mkdir $exp_folder || exit 1
@@ -114,8 +121,22 @@ if [[ $DIAGNOSTIC == True ]]
 then
   sed -ri 's/(.)(ln_ctl)(.*)/   \2    = .true. /' namelist_cfg
 fi
-#rm context_nemo.xml
-sed '/def_nemo-ice/d' $xml_folder/context_nemo.xml | sed '/def_nemo-pisces/d' > context_nemo.xml
+
+
+if [[ ice == False ]] 
+then
+  sed '/def_nemo-ice/d' $xml_folder/context_nemo.xml | sed '/def_nemo-pisces/d' > context_nemo.xml
+fi
+
+if [[ outputs == False ]]
+then
+  if [[ ice == False ]] 
+  then
+    sed '/file_def/d' $xml_folder/context_nemo.xml | sed '/def_nemo-ice/d' $xml_folder/context_nemo.xml | sed '/def_nemo-pisces/d' > context_nemo.xml
+  else
+    sed '/file_def/d' $xml_folder/context_nemo.xml > context_nemo.xml
+  fi
+fi
 
 if ! [ -e "$impi_file"  ]
 then
@@ -124,7 +145,7 @@ cat << EOF > impi.env
 module purge
 module load intel/2018.3
 module load impi/2018.3
-module load netcdf/4.2
+module load netcdf/4.4.1.1
 module load hdf5/1.8.19
 module load perl
 module list
@@ -144,8 +165,8 @@ RN_JOBID=${SLURM_JOB_ID:-$LSB_JOBID}
 
 # Changing the number of steps (if activated)
 if [[ True == True ]];then
-   sed -ri 's/(.)(nn_itend)(.*)/   \2    =    '$TIME_STEP'   /' namelist_cfg
-   sed -ri 's/(.)(nn_itend)(.*)/   \2    =    '$TIME_STEP'   /' namelist_ref
+   sed -ri 's/(.)(nn_itend)(.*)/   \2    =    '$time_step'   /' namelist_cfg
+   sed -ri 's/(.)(nn_itend)(.*)/   \2    =    '$time_step'   /' namelist_ref
 fi
 
 # Source the proper environment for the run
