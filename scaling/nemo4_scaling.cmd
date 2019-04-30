@@ -3,34 +3,34 @@
 #                             RUN NEMO
 ###############################################################################
 #SBATCH --ntasks NOP 
-#SBATCH --ntasks-per-node 46
+#SBATCH --ntasks-per-node PROC_PER_NODE 
 #SBATCH --job-name O025_NOP 
 #SBATCH --output efficiency_NOP_%j.o 
 #SBATCH --error  efficiency_NOP_%j.e
 ##SBATCH -R "span[ptile=16]"
 #SBATCH --time 30:00
 #SBATCH --qos=QUEUE
+set -xv
 
 cd $SLURM_SUBMIT_DIR
 
 # Replace the number of resources used for NEMO and XIOS
 #ACTUAL_PROC=$((NOP/48*46))
-NEMO_PROC=$((NOP/48*46))
+NEMO_PROC=$(((NOP-XIOS_PROC)/48*PROC_PER_NODE))
 time_step=TIME_STEP
 
 # Export extrae variable (for the wrapper to know if it is activated)
-XIOS=False
-#XIOS=True
+#XIOS=False
+xios=XIOS
 
-if [[ $XIOS == True ]]
+if [[ $xios == True ]]
 then
- XIOS_PROC=46 
+ xios_proc=XIOS_PROC 
 fi
 
 ice=ICE
 
 
-set -xv
 
 exec_name=nemo
 #exec_folder=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_scorep/EXP00/
@@ -97,7 +97,7 @@ then
 fi
 
 #file that contains version of modules to load
-#impi_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/Orca2-r10610/impi.env
+impi_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/impi.env
 
 #Create exp folder
 mkdir $exp_folder || exit 1
@@ -132,7 +132,7 @@ if [[ outputs == False ]]
 then
   if [[ ice == False ]] 
   then
-    sed '/file_def/d' $xml_folder/context_nemo.xml | sed '/def_nemo-ice/d' $xml_folder/context_nemo.xml | sed '/def_nemo-pisces/d' > context_nemo.xml
+    sed '/file_def/d' $xml_folder/context_nemo.xml | sed '/def_nemo-ice/d'  | sed '/def_nemo-pisces/d' > context_nemo.xml
   else
     sed '/file_def/d' $xml_folder/context_nemo.xml > context_nemo.xml
   fi
@@ -223,13 +223,13 @@ EOF
   chmod 755 $trace
 fi
 
-if [[ $XIOS == True ]] 
+if [[ $xios == True ]] 
 then
     if [[ $EXTRAE == True ]]
   then
-    XIOS_EXEC="-np $XIOS_PROC ./$trace ./xios_server.exe : "
+    XIOS_EXEC="-np $xios_proc ./$trace ./xios_server.exe : "
   else
-    XIOS_EXEC="-np $XIOS_PROC  ./xios_server.exe : "
+    XIOS_EXEC="-np $xios_proc  ./xios_server.exe : "
   fi
 fi
 # Launch command
