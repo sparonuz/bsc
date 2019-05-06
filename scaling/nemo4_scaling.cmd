@@ -4,9 +4,9 @@
 ###############################################################################
 #SBATCH --ntasks TOTAL_NP 
 #SBATCH --ntasks-per-node PROC_PER_NODE 
-#SBATCH --job-name O025_NOP 
-#SBATCH --output efficiency_NOP_%j.o 
-#SBATCH --error  efficiency_NOP_%j.e
+#SBATCH --job-name O025_TOTAL_NP 
+#SBATCH --output efficiency_TOTAL_NP_%j.o 
+#SBATCH --error  efficiency_TOTAL_NP_%j.e
 #SBATCH --time 30:00
 #SBATCH --qos=QUEUE
 
@@ -15,19 +15,19 @@ set -xv
 cd $SLURM_SUBMIT_DIR
 
 # Export extrae variable (for the wrapper to know if it is activated)
-#XIOS=False
+#xios=False
 xios=USE_XIOS
 
 if [[ $xios == True ]]
 then
  xios_proc=XIOS_PROC 
 else
- xios_proc = 0
+ xios_proc=0
 fi
 
 
 # Replace the number of resources used for NEMO and XIOS
-NEMO_PROC=$(((SLURM_NTASKS-xios_proc)/48*SLURM_NTASKS_PER_NODE))
+nemo_proc=$(((SLURM_NTASKS-xios_proc)/48*SLURM_NTASKS_PER_NODE))
 time_step=TIME_STEP
 
 ice=ICE
@@ -42,7 +42,7 @@ exec_folder=EXEC_FOLDER
 #Create the new folder
 #exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_ref
 exp_folder=EXP_FOLDER
-#exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/Orca025_4_$NEMO_PROC
+#exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/Orca025_4_$nemo_proc
 
 #Input files
 xml_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/Miguel_input_ORCA025/
@@ -81,7 +81,7 @@ then
   function_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_scorep/extrae_functions_for_xml.txt
 fi
 
-if [[ $XIOS == True ]] 
+if [[ $xios == True ]] 
 then
   xios_exec_folder=/home/bsc32/bsc32402/local/XIOS/xios-2.5/bin/
   xios_exec_name=xios_server.exe
@@ -155,7 +155,7 @@ fi
 
 cp -s $exec_folder/$exec_name ./ || exit 1
 
-if [[ $XIOS == True ]]
+if [[ $xios == True ]]
 then
   cp -s $xios_exec_folder/$xios_exec_name ./ || exit 1
 fi
@@ -173,7 +173,7 @@ source impi.env
    
 # Modify the iodef.xml file to select if using or not servers.
 #if [[ False == True ]]; then
-if [[ $XIOS == True ]]; then
+if [[ $xios == True ]]; then
     XSERVER=true
 else
     XSERVER=false
@@ -234,19 +234,19 @@ fi
 # Launch command
 if [[ $SCOREP == True ]]
 then
-  EXEC="time mpirun $XIOS_EXEC -np $NEMO_PROC ./$exec_name"
+  EXEC="time mpirun $XIOS_EXEC -np $nemo_proc ./$exec_name"
 fi
 
 if [[ $EXTRAE == True ]]
 then 
-  EXEC="time mpirun $XIOS_EXEC -np $NEMO_PROC ./$trace ./$exec_name" 
+  EXEC="time mpirun $XIOS_EXEC -np $nemo_proc ./$trace ./$exec_name" 
 else
   if [[ $DDT == True ]] 
   then 
     module load DDT/18.2 
-    EXEC="ddt --connect mpirun $XIOS_EXEC -np $NEMO_PROC ./$exec_name"
+    EXEC="ddt --connect mpirun $XIOS_EXEC -np $nemo_proc ./$exec_name"
   else
-    EXEC="time mpirun $XIOS_EXEC -np $NEMO_PROC ./$exec_name"
+    EXEC="time mpirun $XIOS_EXEC -np $nemo_proc ./$exec_name"
   fi 
 fi
    

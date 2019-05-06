@@ -7,11 +7,12 @@ RUN_FOLDER=EFFICIENCY_NEMO4_orig
 blue_print_job=nemo4_scaling.cmd
 
 #QUEUE="xlarge"
-QUEUE="bsc_es"
+# QUEUE="bsc_es"
+QUEUE="debug"
 
 TIME_STEP=1920
 
-EXP_FOLDER=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/Orca025_OCE_5_NEMO_PROC
+EXP_FOLDER=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/Orca025_OCE_5_\$nemo_proc
 #EXP_FOLDER=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/Orca025_XIOS_2_\$NEMO_PROC
 
 #EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2/EXP00/
@@ -21,8 +22,12 @@ EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_jpnij/EXP00/
 #EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA025_ICE/EXP00/
 
 ICE=False
-#OUTPUT=True
-OUTPUT=False
+
+OUTPUT=True
+# OUTPUT=False
+
+XIOS=True
+# XIOS=False
 
 mkdir -p $RUN_FOLDER
 
@@ -39,12 +44,10 @@ module load perl
 module list
 EOF
 
-#XIOS=True
-XIOS=False
 
 if [[ $XIOS == True ]]
 then
-  XIOS_PPN=4
+  XIOS_PPN=2
 fi
 
 #HIGHMEM=True
@@ -52,14 +55,11 @@ HIGHMEM=False
 
 PROC_PER_NODE=46
  
-for TOTAL_NP in  576  #`seq $((PROC_PER_NODE*51)) $((PROC_PER_NODE*4))  $((PROC_PER_NODE*100))`
+for TOTAL_NP in  $((PROC_PER_NODE*4))  #`seq $((PROC_PER_NODE*51)) $((PROC_PER_NODE*4))  $((PROC_PER_NODE*100))`
 do
   if [[ $XIOS == True ]]
   then
     XIOS_PROC=$((XIOS_PPN*TOTAL_NP/PROC_PER_NODE))
-    NEMO_PROC=$((TOTAL_NP-XIOS_PROC))
-  else
-    NEMO_PROC=${TOTAL_NP}
   fi
   # echo $XIOS_PROC $TOTAL_NP $NOP
   job=job_$TOTAL_NP
@@ -78,9 +78,8 @@ do
     sed -ri 's@XIOS_PROC@'$XIOS_PROC'@' $job
   fi
   sed -ri 's@TOTAL_NP@'$TOTAL_NP'@' $job
-  sed -ri 's@NEMO_PROC@'$NEMO_PROC'@' $job
-  sed -ri 's@PROC_PER_NODE@'$PROC_PER_NODE'@' $job
   sed -ri 's@TIME_STEP@'$TIME_STEP'@' $job
+  sed -ri 's@PROC_PER_NODE@'$PROC_PER_NODE'@' $job
   sed -ri 's@ICE@'$ICE'@' $job
   sed -ri 's@OUTPUT@'$OUTPUT'@' $job
 
