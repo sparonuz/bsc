@@ -45,8 +45,6 @@ XIOS=False
 if [[ $XIOS == True ]]
 then
   XIOS_PPN=4
-else
-  XIOS_PPN=0
 fi
 
 #HIGHMEM=True
@@ -56,8 +54,13 @@ PROC_PER_NODE=46
  
 for TOTAL_NP in  576  #`seq $((PROC_PER_NODE*51)) $((PROC_PER_NODE*4))  $((PROC_PER_NODE*100))`
 do
-  XIOS_PROC=$((XIOS_PPN*TOTAL_NP/PROC_PER_NODE))
-  NEMO_PROC=$((TOTAL_NP-XIOS_PROC))
+  if [[ $XIOS == True ]]
+  then
+    XIOS_PROC=$((XIOS_PPN*TOTAL_NP/PROC_PER_NODE))
+    NEMO_PROC=$((TOTAL_NP-XIOS_PROC))
+  else
+    NEMO_PROC=${TOTAL_NP}
+  fi
   # echo $XIOS_PROC $TOTAL_NP $NOP
   job=job_$TOTAL_NP
   cp $blue_print_job $job 
@@ -66,15 +69,18 @@ do
     sed -ri 's@HIGHMEM@SBATCH --constraint=highmem@' $job
   fi
   sed -ri 's@QUEUE@'$QUEUE'@' $job
-  sed -ri 's@TIME_STEP@'$TIME_STEP'@' $job
   sed -ri 's@EXP_FOLDER@'$EXP_FOLDER'@' $job
   sed -ri 's@EXEC_FOLDER@'$EXEC_FOLDER'@' $job
   sed -ri 's@RUN_FOLDER@'$RUN_FOLDER'@' $job
+  sed -ri 's@USE_XIOS@'$XIOS'@' $job
+  if [[ $XIOS == True ]]
+  then
+    sed -ri 's@XIOS_PROC@'$XIOS_PROC'@' $job
+  fi
   sed -ri 's@TOTAL_NP@'$TOTAL_NP'@' $job
   sed -ri 's@NEMO_PROC@'$NEMO_PROC'@' $job
-  sed -ri 's@XIOS_PROC@'$XIOS_PROC'@' $job
-  sed -ri 's@USE_XIOS@'$XIOS'@' $job
   sed -ri 's@PROC_PER_NODE@'$PROC_PER_NODE'@' $job
+  sed -ri 's@TIME_STEP@'$TIME_STEP'@' $job
   sed -ri 's@ICE@'$ICE'@' $job
   sed -ri 's@OUTPUT@'$OUTPUT'@' $job
 
