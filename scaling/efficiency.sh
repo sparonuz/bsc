@@ -12,7 +12,7 @@ QUEUE="debug"
 
 TIME_STEP=1920
 
-EXP_FOLDER=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/Orca025_OCE_5_\$nemo_proc
+EXP_FOLDER_ROOT=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/${RUN_FOLDER}/Orca025_OCE_5
 #EXP_FOLDER=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/Orca025_XIOS_2_\$NEMO_PROC
 
 #EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2/EXP00/
@@ -55,18 +55,16 @@ HIGHMEM=False
 
 PROC_PER_NODE=46
 TOTAL_PPN=48
- 
+XIOS_PROC=0
 for TOTAL_NP in  $((TOTAL_PPN*4))  #`seq $((PROC_PER_NODE*51)) $((PROC_PER_NODE*4))  $((PROC_PER_NODE*100))`
 do
   job=job_$TOTAL_NP
-  cp $blue_print_job $job 
+  cp $blue_print_job $job
   if [[ $HIGHMEM == True ]]
   then
     sed -ri 's@HIGHMEM@SBATCH --constraint=highmem@' $job
   fi
   sed -ri 's@QUEUE@'$QUEUE'@' $job
-  sed -ri 's@EXP_FOLDER@'$EXP_FOLDER'@' $job
-  sed -ri 's@EXEC_FOLDER@'$EXEC_FOLDER'@' $job
   sed -ri 's@RUN_FOLDER@'$RUN_FOLDER'@' $job
   sed -ri 's@USE_XIOS@'$XIOS'@' $job
   if [[ $XIOS == True ]]
@@ -75,11 +73,19 @@ do
     sed -ri 's@XIOS_PROC@'$XIOS_PROC'@' $job
   fi
   sed -ri 's@TOTAL_NP@'$TOTAL_NP'@' $job
+  NEMO_PROC=$(((TOTAL_NP/48*PROC_PER_NODE)-XIOS_PROC))
+  sed -ri 's@NEMO_PROC@'$NEMO_PROC'@' $job
   sed -ri 's@TIME_STEP@'$TIME_STEP'@' $job
   sed -ri 's@PROC_PER_NODE@'$PROC_PER_NODE'@' $job
+  sed -ri 's@EXEC_FOLDER@'$EXEC_FOLDER'@' $job
   sed -ri 's@ICE@'$ICE'@' $job
   sed -ri 's@OUTPUT@'$OUTPUT'@' $job
 
+  #Create exp folder
+  EXP_FOLDER=${EXP_FOLDER_ROOT}_${NEMO_PROC}
+  mkdir ${EXP_FOLDER} || exit 1
+  sed -ri 's@EXP_FOLDER@'$EXP_FOLDER'@' $job
+  
   sbatch $job 
 done
 cd .. 

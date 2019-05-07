@@ -5,8 +5,8 @@
 #SBATCH --ntasks TOTAL_NP 
 #SBATCH --ntasks-per-node PROC_PER_NODE 
 #SBATCH --job-name O025_TOTAL_NP 
-#SBATCH --output efficiency_TOTAL_NP_%j.o 
-#SBATCH --error  efficiency_TOTAL_NP_%j.e
+#SBATCH --output EXP_FOLDER/slurm_%j.o 
+#SBATCH --error  EXP_FOLDER/slurm_%j.e
 #SBATCH --time 30:00
 #SBATCH --qos=QUEUE
 
@@ -27,7 +27,7 @@ fi
 
 
 # Replace the number of resources used for NEMO and XIOS
-nemo_proc=$(((SLURM_NTASKS/48*SLURM_NTASKS_PER_NODE)-xios_proc))
+nemo_proc=NEMO_PROC #$(((SLURM_NTASKS/48*SLURM_NTASKS_PER_NODE)-xios_proc))
 time_step=TIME_STEP
 
 ice=ICE
@@ -99,7 +99,7 @@ fi
 impi_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/impi.env
 
 #Create exp folder
-mkdir $exp_folder || exit 1
+# mkdir $exp_folder || exit 1
 
 #copy slurm file
 cp $0 $exp_folder
