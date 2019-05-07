@@ -27,7 +27,7 @@ fi
 
 
 # Replace the number of resources used for NEMO and XIOS
-nemo_proc=$(((SLURM_NTASKS-xios_proc)/48*SLURM_NTASKS_PER_NODE))
+nemo_proc=$(((SLURM_NTASKS/48*SLURM_NTASKS_PER_NODE)-xios_proc))
 time_step=TIME_STEP
 
 ice=ICE

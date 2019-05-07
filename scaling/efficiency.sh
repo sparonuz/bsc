@@ -54,14 +54,10 @@ fi
 HIGHMEM=False
 
 PROC_PER_NODE=46
+TOTAL_PPN=48
  
-for TOTAL_NP in  $((PROC_PER_NODE*4))  #`seq $((PROC_PER_NODE*51)) $((PROC_PER_NODE*4))  $((PROC_PER_NODE*100))`
+for TOTAL_NP in  $((TOTAL_PPN*4))  #`seq $((PROC_PER_NODE*51)) $((PROC_PER_NODE*4))  $((PROC_PER_NODE*100))`
 do
-  if [[ $XIOS == True ]]
-  then
-    XIOS_PROC=$((XIOS_PPN*TOTAL_NP/PROC_PER_NODE))
-  fi
-  # echo $XIOS_PROC $TOTAL_NP $NOP
   job=job_$TOTAL_NP
   cp $blue_print_job $job 
   if [[ $HIGHMEM == True ]]
@@ -75,6 +71,7 @@ do
   sed -ri 's@USE_XIOS@'$XIOS'@' $job
   if [[ $XIOS == True ]]
   then
+    XIOS_PROC=$((XIOS_PPN*TOTAL_NP/TOTAL_PPN))
     sed -ri 's@XIOS_PROC@'$XIOS_PROC'@' $job
   fi
   sed -ri 's@TOTAL_NP@'$TOTAL_NP'@' $job
