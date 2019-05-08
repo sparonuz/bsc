@@ -5,7 +5,7 @@ then
    module load scorep
 fi
 
-N_PROC=576
+N_PROC=240
 
 #discard if the time/visit time is less than
 time_visit_percentage=1.0
@@ -31,7 +31,8 @@ then
       echo $exe_name ": file not found"
       exit
     fi
-    extrae_out_file=extrae_functions_for_xml.txt
+    exe_path=`dirname $exe_name`
+    extrae_out_file=${exe_path}/extrae_functions_for_xml.txt
 else
     w_txt=0
 fi
@@ -88,7 +89,7 @@ then
   then
     echo -e "Not all function found in exe file ... check needed \nAborting"
   else
-    echo -e "Found "$n_lin_in" functions to instrument. The output for extrae has been dumped to " `pwd`"/"$extrae_out_file "file. \nStop."
+    echo -e "Found "$n_lin_in" functions to instrument. The output for extrae has been dumped to " $extrae_out_file "file. \nStop."
     rm $file_name_txt $file_name_txt_tmp
   fi
 fi
