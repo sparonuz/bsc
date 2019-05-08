@@ -45,9 +45,7 @@ exp_folder=EXP_FOLDER
 #exp_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/Orca025_4_$nemo_proc
 
 #Input files
-xml_folder=/gpfs/scratch/bsc32/bsc32402/NEMO4/Miguel_input_ORCA025/
-netCDF_folder=$xml_folder
-namelist_folder=$xml_folder
+input_folder=INPUT_FOLDER
 
 #Restart mode
 #RESTART=True
@@ -60,8 +58,7 @@ output=OUTPUT
 DDT=False
 
 #extrae variables
-export EXTRAE=False
-#export EXTRAE=True
+EXTRAE=USE_EXTRAE
 
 #activate ln_ctl flag
 #DIAGNOSTIC=True
@@ -75,10 +72,9 @@ fi
 if [[ $EXTRAE == True ]]
 then 
   #extrae_home=/apps/BSCTOOLS/extrae/3.5.2/impi_2017_4/
-  extrae_home=/apps/BSCTOOLS/extrae/3.5.4/impi_2018_1/
-  extrae_xml=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/detailed_trace_basic.xml
-#  extrae_xml=/gpfs/scratch/bsc32/bsc32402/NEMO4/Orca2-r10610/detailed_trace_basic.xml
-  function_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/eOrca025_scorep/extrae_functions_for_xml.txt
+  extrae_home=EXTRAE_HOME
+  extrae_xml=EXTRAE_XML
+  function_file=FUNCION_FILE
 fi
 
 if [[ $xios == True ]] 
@@ -86,8 +82,9 @@ then
   xios_exec_folder=/home/bsc32/bsc32402/local/XIOS/xios-2.5/bin/
   xios_exec_name=xios_server.exe
 fi
-#SCOREP=True
-SCOREP=False
+
+SCOREP=USE_SCOREP
+
 if [[ $SCOREP == True ]]
 then
   scorep_dir=scorep_nemo
@@ -96,7 +93,7 @@ then
 fi
 
 #file that contains version of modules to load
-impi_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/impi.env
+impi_file=INPUT_FOLDER/impi.env
 
 #Create exp folder
 # mkdir $exp_folder || exit 1
@@ -105,11 +102,8 @@ impi_file=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/impi.env
 cp $0 $exp_folder
 cd $exp_folder
 
-#copy all the input files or creates the ones that doesn't exist
-cp $xml_folder/*.xml . || exit 1
-cp $namelist_folder/namelist_* . || exit 1
-cp -s $netCDF_folder/*.nc . || exit 1
-cp $netCDF_folder/*.dat . 2> /dev/null || echo "                               0  0.0000000000000000E+00  0.0000000000000000E+00" > EMPave_old.dat
+#copy all the input files
+cp $input_folder/* .  || exit 1
 
 if [[ $RESTART == True ]]
 then
@@ -124,16 +118,16 @@ fi
 
 if [[ $ice == False ]] 
 then
-  sed '/def_nemo-ice/d' $xml_folder/context_nemo.xml | sed '/def_nemo-pisces/d' > context_nemo.xml
+  sed '/def_nemo-ice/d' $input_folder/context_nemo.xml | sed '/def_nemo-pisces/d' > context_nemo.xml
 fi
 
 if [[ $output == False ]]
 then
   if [[ $ice == False ]] 
   then
-    sed '/file_def/d' $xml_folder/context_nemo.xml | sed '/def_nemo-ice/d'  | sed '/def_nemo-pisces/d' > context_nemo.xml
+    sed '/file_def/d' $input_folder/context_nemo.xml | sed '/def_nemo-ice/d'  | sed '/def_nemo-pisces/d' > context_nemo.xml
   else
-    sed '/file_def/d' $xml_folder/context_nemo.xml > context_nemo.xml
+    sed '/file_def/d' $input_folder/context_nemo.xml > context_nemo.xml
   fi
 fi
 
