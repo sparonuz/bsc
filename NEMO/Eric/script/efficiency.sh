@@ -1,25 +1,26 @@
 #!/bin/bash
 
 #RUN_FOLDER=EFFICIENCY_NEMO4_MPI+PAPI
-RUN_FOLDER=bench_scorep
+#RUN_FOLDER=.
 #RUN_FOLDER=EFFICIENCY_NEMO4_func
 
-blue_print_job=nemo4_scaling.cmd
+blue_print_job=slurm.cmd
 
 #QUEUE="xlarge"
 QUEUE="bsc_es"
 #QUEUE="debug"
 
-TIME_STEP=1500
+TIME_STEP=15
 
-EXP_FOLDER_ROOT=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/BENCH_TEST/${RUN_FOLDER}/bench_scorep
+EXP_FOLDER_ROOT=/gpfs/scratch/bsc32/bsc32402/BENCH_TEST/BENCH_extrae_MPI_PAPI
 
-EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/tests/BENCH_scorep/EXP00/
-#EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/tests/BENCH_N/EXP00
+#EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/tests/BENCH_scorep/EXP00/
+EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/tests/BENCH_fine_f3.5.4/EXP00
 
 INPUT_FOLDER=/gpfs/scratch/bsc32/bsc32402/BENCH_TEST/BENCH_INPUT
 cp ${INPUT_FOLDER}/namelist_cfg_orca1_like  ${INPUT_FOLDER}/namelist_cfg
 
+#ICE=True
 ICE=False
 
 #OUTPUT=True
@@ -29,18 +30,23 @@ OUTPUT=False
 XIOS=False
 
 
-#EXTRAE=True 
-EXTRAE=False 
+EXTRAE=True 
+#EXTRAE=False 
 if [[ $EXTRAE == True ]]
 then 
+  EXTRAE_HOME=/apps/BSCTOOLS/extrae/3.5.4/impi_2018_1/
+  #EXTRAE_XML=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/EFFICIENCY_NEMO4_func/detailed_trace_basic.xml
+  EXTRAE_XML=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/EFFICIENCY_NEMO4_MPI+PAPI/detailed_trace_basic.xml
   FUNCION_FILE=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/tests/BENCH_N/EXP00/extrae_functions_for_xml.txt
 fi
-SCOREP=True
-#SCOREP=False
-mkdir -p $RUN_FOLDER
 
-cp $blue_print_job  $RUN_FOLDER
-cd $RUN_FOLDER
+#SCOREP=True
+SCOREP=False
+
+#mkdir -p $RUN_FOLDER
+
+#cp $blue_print_job  $RUN_FOLDER
+#cd $RUN_FOLDER
 
 cat << EOF > impi.env
 module purge
@@ -83,7 +89,7 @@ do
     sed -ri 's@XIOS_PROC@'$XIOS_PROC'@' $job
   fi
 
-  NEMO_PROC=$TOTAL_NP #$(((TOTAL_NP/TOTAL_PPN*PROC_PER_NODE)-XIOS_PROC))
+  NEMO_PROC=$TOTAL_NP 
   sed -ri 's@NEMO_PROC@'$NEMO_PROC'@' $job
   sed -ri 's@INPUT_FOLDER@'$INPUT_FOLDER'@' $job
 
@@ -97,6 +103,8 @@ do
   sed -ri 's@USE_EXTRAE@'$EXTRAE'@' $job
   if [[ $EXTRAE == True  ]]
   then
+     sed -ri 's@EXTRAE_HOME_PATH@'$EXTRAE_HOME'@' $job
+     sed -ri 's@EXTRAE_XML@'$EXTRAE_XML'@' $job
      sed -ri 's@FUNCION_FILE@'$FUNCION_FILE'@' $job
   fi
   sed -ri 's@TIME_STEP@'$TIME_STEP'@' $job
