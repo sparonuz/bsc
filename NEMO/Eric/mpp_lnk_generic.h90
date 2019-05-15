@@ -79,6 +79,7 @@
       ENDIF
 !EM you can uncomment this "if statement" if you want to exclude lbc_lnk computation time
 !EM      IF (ncom_stp <= ( nit000 + 1 ) .or. mod(ncom_stp,nn_comm_mod) == 0 ) THEN
+      IF (ncom_stp <= ( nit000 + 1 ) .or. mod(ncom_stp,nn_comm_mod) == 0 ) THEN
       ! ------------------------------- !
       !   standard boundary treatment   !    ! CAUTION: semi-column notation is often impossible
       ! ------------------------------- !
@@ -336,6 +337,7 @@
       !
       IF( nbondj /= 2 ) DEALLOCATE( zt3ns, zt3sn )
 !EM      ENDIF
+   ENDIF
       !
    END SUBROUTINE ROUTINE_LNK
 

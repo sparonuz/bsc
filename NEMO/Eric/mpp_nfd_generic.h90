@@ -154,7 +154,7 @@
          ! a better test should be: a testing if "suppressed land-processors" belongs to the north-pole folding
          IF ( jpni*jpnj /= jpnij ) ztabr(:,:,:,:,:) = 0._wp
          !
-   ! Modulo on exchanges (bench case)
+!EM   IF (ncom_stp <= ( nit000 + 1 ) .or. mod(ncom_stp,nn_comm_mod) == 0) THEN
    IF (ncom_stp <= ( nit000 + 1 ) .or. mod(ncom_stp,nn_comm_mod) == 0) THEN
          ! start waiting time measurement
          IF( ln_timing ) CALL tic_tac(.TRUE.)
@@ -210,6 +210,7 @@
          ENDIF
          !
          IF( ln_timing ) CALL tic_tac(.FALSE.)
+!EM   ENDIF
    ENDIF
          !
          ! North fold boundary condition
@@ -249,7 +250,7 @@
          ! and we need a default definition to 0.
          ! a better test should be: a testing if "suppressed land-processors" belongs to the north-pole folding
          IF ( jpni*jpnj /= jpnij ) ztab(:,:,:,:,:) = 0._wp
-   !
+!EM   IF (ncom_stp <= ( nit000 + 1 ) .or. mod(ncom_stp,nn_comm_mod) == 0 ) THEN
    IF (ncom_stp <= ( nit000 + 1 ) .or. mod(ncom_stp,nn_comm_mod) == 0 ) THEN
             ! start waiting time measurement
          IF( ln_timing ) CALL tic_tac(.TRUE.)
@@ -258,6 +259,7 @@
          !
          ! stop waiting time measurement
          IF( ln_timing ) CALL tic_tac(.FALSE.)
+!EM   ENDIF
    ENDIF
          !
          DO jr = 1, ndim_rank_north         ! recover the global north array
