@@ -3,7 +3,7 @@
 #                             RUN NEMO
 ###############################################################################
 #SBATCH --ntasks TOTAL_NP 
-#PROC_PER_NODE 
+#SBATCH --ntasks-per-node PROC_PER_NODE 
 #SBATCH --exclusive
 #SBATCH --job-name O025_TOTAL_NP 
 #SBATCH --output EXP_FOLDER/slurm_%j.o 
@@ -57,8 +57,7 @@ RESTART=False
 output=OUTPUT
 
 #Debug mode
-#DDT=True
-DDT=False
+DDT=USE_DDT
 
 #extrae variables
 export EXTRAE=False
@@ -67,6 +66,8 @@ export EXTRAE=False
 #activate ln_ctl flag
 #DIAGNOSTIC=True
 DIAGNOSTIC=False
+
+machinef=MACHINEF
 
 if [[ $RESTART == True ]]
 then
@@ -223,6 +224,24 @@ EOF
   chmod 755 $trace
 fi
 
+EXEC_CMD="mpirun "
+
+if [[ $machinef == True ]]
+then
+  hosts=(`scontrol show hostname`)
+  cat /dev/null > machinefile
+  for n_node in `seq 0 $((${#hosts[@]}-1))`
+  do
+    for j in `seq 0 $((PROC_PER_NODE-1))`
+    do
+      echo -n ${hosts[$n_node]} " " >> machinefile
+    done
+    echo " ">> machinefile
+  done
+  EXEC_CMD=$EXEC_CMD" -machinefile machinefile "
+fi
+
+
 if [[ $xios == True ]] 
 then
     if [[ $EXTRAE == True ]]
@@ -231,23 +250,27 @@ then
   else
     XIOS_EXEC="-np $xios_proc  ./xios_server.exe : "
   fi
+  EXEC_CMD=${EXEC_CMD}${XIOS_EXEC}
 fi
-
-
+exec_name=./$exec_name
 if [[ $EXTRAE == True ]]
 then 
-  EXEC="time mpirun $XIOS_EXEC -np $nemo_proc ./$trace ./$exec_name" 
+  #EXEC=" $EXEC_CMD -np $nemo_proc ./$trace ./$exec_name" 
+  exec_name="./$trace  $exec_name"
 else
   if [[ $DDT == True ]] 
   then 
     module load DDT/18.2 
-    EXEC="ddt --connect mpirun $XIOS_EXEC -np $nemo_proc ./$exec_name"
+    EXEC_CMD="ddt --connect $EXEC_CMD"
   else
-    export I_MPI_DEBUG=5
-    EXEC="time mpirun $XIOS_EXEC -np $nemo_proc ./$exec_name"
+    EXEC_CMD="time "$EXEC_CMD
+    # export I_MPI_STATS=5
+    #EXEC="time mpirun -bind-to core  -env I_MPI_DEBUG=6 $XIOS_EXEC -np $nemo_proc ./$exec_name "
   fi 
 fi
-   
+
+EXEC="$EXEC_CMD -np $nemo_proc $exec_name"   
+
 # Actual execution
-eval $EXEC
+eval $EXEC 
    

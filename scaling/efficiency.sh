@@ -7,14 +7,10 @@ mkdir -p ${RUN_FLD}
 
 blue_print_job=slurm_print.cmd
 
-QUEUE="xlarge"
-#QUEUE="bsc_es"
-#QUEUE="debug"
-
 TIME_STEP=12
 
 #EXP_FOLDER_ROOT=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/${RUN_FLD}/Orca025_OCE_XIOS_ppn4
-EXP_FOLDER_ROOT=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/${RUN_FLD}/Orca025_OCE
+EXP_FOLDER_ROOT=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/${RUN_FLD}/Orca025_OCE_bind_to_core
 #EXP_FOLDER=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FLD/Orca025_XIOS_2_\$NEMO_PROC
 
 #EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2/EXP00/
@@ -30,6 +26,9 @@ OUTPUT=False
 
 #XIOS=True
 XIOS=False
+
+#DDT=True
+DDT=False
 
 mkdir -p $RUN_FLD
 
@@ -59,7 +58,9 @@ PROC_PER_NODE=46
 TOTAL_PPN=48
 XIOS_PROC=0
 
-for TOTAL_NP in   $((PROC_PER_NODE*1)) # `seq $((PROC_PER_NODE*144)) $((PROC_PER_NODE*4))  $((PROC_PER_NODE*156))`
+MACHINEF=True
+
+for TOTAL_NP in   $((PROC_PER_NODE*2)) # `seq $((PROC_PER_NODE*144)) $((PROC_PER_NODE*4))  $((PROC_PER_NODE*156))`
 do
   job=job_$TOTAL_NP
   cp $blue_print_job $job
@@ -69,13 +70,13 @@ do
   fi
   if [[ $PROC_PER_NODE -ne $TOTAL_PPN ]]
   then
-    sed -ri 's@PROC_PER_NODE@SBATCH --ntasks-per-node '$PROC_PER_NODE'@' $job
+    sed -ri 's@PROC_PER_NODE@'$PROC_PER_NODE'@' $job
   fi
 
-  if [[ $TOTAL_NP -gt $((PROC_PER_NODE*50)) ]]
+  if [[ $TOTAL_NP -gt $((TOTAL_PPN*50)) ]]
   then
     QUEUE="xlarge"
-  elif [[ $TOTAL_NP -gt $((PROC_PER_NODE*15)) ]] 
+  elif [[ $TOTAL_NP -gt $((TOTAL_PPN*15)) ]] 
   then
     QUEUE="bsc_es" 
   else
@@ -91,6 +92,7 @@ do
     XIOS_PROC=$((XIOS_PPN*TOTAL_NP/TOTAL_PPN))
     sed -ri 's@XIOS_PROC@'$XIOS_PROC'@' $job
   fi
+  sed -ri 's@USE_DDT@'$DDT'@' $job
   sed -ri 's@TOTAL_NP@'$TOTAL_NP'@' $job
   NEMO_PROC=$((TOTAL_NP-XIOS_PROC))
   sed -ri 's@NEMO_PROC@'$NEMO_PROC'@' $job
@@ -98,6 +100,7 @@ do
   sed -ri 's@EXEC_FOLDER@'$EXEC_FOLDER'@' $job
   sed -ri 's@ICE@'$ICE'@' $job
   sed -ri 's@OUTPUT@'$OUTPUT'@' $job
+  sed -ri 's@MACHINEF@'$MACHINEF'@' $job
 
   #Create exp folder
   EXP_FOLDER=${EXP_FOLDER_ROOT}_${NEMO_PROC}
