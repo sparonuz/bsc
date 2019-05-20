@@ -1,24 +1,27 @@
 #!/bin/bash
 
-#RUN_FOLDER=EFFICIENCY_NEMO4_MPI+PAPI
-RUN_FOLDER=bench_scorep
-#RUN_FOLDER=EFFICIENCY_NEMO4_func
+#RUN_FLD=EFFICIENCY_NEMO4_MPI+PAPI
+RUN_FLD=MPI_BINDING
+mkdir -p ${RUN_FLD}
+#RUN_FLD=EFFICIENCY_NEMO4_func
 
-blue_print_job=slurm.cmd
+blue_print_job=slurm_print.cmd
 
-#QUEUE="xlarge"
-QUEUE="bsc_es"
+QUEUE="xlarge"
+#QUEUE="bsc_es"
 #QUEUE="debug"
 
-TIME_STEP=1500
+TIME_STEP=12
 
-EXP_FOLDER_ROOT=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/BENCH_TEST/${RUN_FOLDER}/bench_scorep
+#EXP_FOLDER_ROOT=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/${RUN_FLD}/Orca025_OCE_XIOS_ppn4
+EXP_FOLDER_ROOT=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/${RUN_FLD}/Orca025_OCE
+#EXP_FOLDER=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FLD/Orca025_XIOS_2_\$NEMO_PROC
 
-EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/tests/BENCH_scorep/EXP00/
-#EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/tests/BENCH_N/EXP00
-
-INPUT_FOLDER=/gpfs/scratch/bsc32/bsc32402/BENCH_TEST/BENCH_INPUT
-cp ${INPUT_FOLDER}/namelist_cfg_orca1_like  ${INPUT_FOLDER}/namelist_cfg
+#EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2/EXP00/
+EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2_jpnij/EXP00/
+#EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2-NETCDF-4.4.1.1/EXP00/
+#EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA2-xios-r1660/EXP00/
+#EXEC_FOLDER=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/cfgs/ORCA025_ICE/EXP00/
 
 ICE=False
 
@@ -28,21 +31,10 @@ OUTPUT=False
 #XIOS=True
 XIOS=False
 
+mkdir -p $RUN_FLD
 
-#EXTRAE=True 
-EXTRAE=False 
-if [[ $EXTRAE == True ]]
-then 
-  EXTRAE_HOME=/apps/BSCTOOLS/extrae/3.5.4/impi_2018_1/
-  EXTRAE_XML=/gpfs/scratch/bsc32/bsc32402/NEMO4/run/RUN_FOLDER/detailed_trace_basic.xml
-  FUNCION_FILE=/home/bsc32/bsc32402/local/Nemo/trunk-r10610/tests/BENCH_N/EXP00/extrae_functions_for_xml.txt
-fi
-SCOREP=True
-#SCOREP=False
-mkdir -p $RUN_FOLDER
-
-cp $blue_print_job  $RUN_FOLDER
-cd $RUN_FOLDER
+cp $blue_print_job  $RUN_FLD
+cd $RUN_FLD
 
 cat << EOF > impi.env
 module purge
@@ -63,10 +55,11 @@ fi
 #HIGHMEM=True
 HIGHMEM=False
 
-PROC_PER_NODE=48
+PROC_PER_NODE=46
 TOTAL_PPN=48
 XIOS_PROC=0
-for TOTAL_NP in  $((PROC_PER_NODE*5)) # `seq $((PROC_PER_NODE*10)) $((PROC_PER_NODE*4))  $((PROC_PER_NODE*48))`
+
+for TOTAL_NP in   $((PROC_PER_NODE*1)) # `seq $((PROC_PER_NODE*144)) $((PROC_PER_NODE*4))  $((PROC_PER_NODE*156))`
 do
   job=job_$TOTAL_NP
   cp $blue_print_job $job
@@ -74,38 +67,42 @@ do
   then
     sed -ri 's@HIGHMEM@SBATCH --constraint=highmem@' $job
   fi
+  if [[ $PROC_PER_NODE -ne $TOTAL_PPN ]]
+  then
+    sed -ri 's@PROC_PER_NODE@SBATCH --ntasks-per-node '$PROC_PER_NODE'@' $job
+  fi
+
+  if [[ $TOTAL_NP -gt $((PROC_PER_NODE*50)) ]]
+  then
+    QUEUE="xlarge"
+  elif [[ $TOTAL_NP -gt $((PROC_PER_NODE*15)) ]] 
+  then
+    QUEUE="bsc_es" 
+  else
+    QUEUE="debug"
+  fi 
+
   sed -ri 's@QUEUE@'$QUEUE'@' $job
-  sed -ri 's@TOTAL_NP@'$TOTAL_NP'@' $job
-  sed -ri 's@PROC_PER_NODE@'$PROC_PER_NODE'@' $job
-  sed -ri 's@RUN_FOLDER@'$RUN_FOLDER'@' $job
+
+  sed -ri 's@RUN_FLD@'$RUN_FLD'@' $job
   sed -ri 's@USE_XIOS@'$XIOS'@' $job
   if [[ $XIOS == True ]]
   then
     XIOS_PROC=$((XIOS_PPN*TOTAL_NP/TOTAL_PPN))
     sed -ri 's@XIOS_PROC@'$XIOS_PROC'@' $job
   fi
-
-  NEMO_PROC=$TOTAL_NP #$(((TOTAL_NP/TOTAL_PPN*PROC_PER_NODE)-XIOS_PROC))
+  sed -ri 's@TOTAL_NP@'$TOTAL_NP'@' $job
+  NEMO_PROC=$((TOTAL_NP-XIOS_PROC))
   sed -ri 's@NEMO_PROC@'$NEMO_PROC'@' $job
-  sed -ri 's@INPUT_FOLDER@'$INPUT_FOLDER'@' $job
+  sed -ri 's@TIME_STEP@'$TIME_STEP'@' $job
+  sed -ri 's@EXEC_FOLDER@'$EXEC_FOLDER'@' $job
+  sed -ri 's@ICE@'$ICE'@' $job
+  sed -ri 's@OUTPUT@'$OUTPUT'@' $job
 
   #Create exp folder
-  sed -ri 's@EXEC_FOLDER@'$EXEC_FOLDER'@' $job
   EXP_FOLDER=${EXP_FOLDER_ROOT}_${NEMO_PROC}
   mkdir ${EXP_FOLDER} || exit 1
   sed -ri 's@EXP_FOLDER@'$EXP_FOLDER'@' $job
-
-  sed -ri 's@USE_SCOREP@'$SCOREP'@' $job
-  sed -ri 's@USE_EXTRAE@'$EXTRAE'@' $job
-  if [[ $EXTRAE == True  ]]
-  then
-     sed -ri 's@EXTRAE_HOME@'$EXTRAE_HOME'@' $job
-     sed -ri 's@EXTRAE_XML@'$EXTRAE_XML'@' $job
-     sed -ri 's@FUNCION_FILE@'$FUNCION_FILE'@' $job
-  fi
-  sed -ri 's@TIME_STEP@'$TIME_STEP'@' $job
-  sed -ri 's@ICE@'$ICE'@' $job
-  sed -ri 's@OUTPUT@'$OUTPUT'@' $job
   
   sbatch $job 
 done
