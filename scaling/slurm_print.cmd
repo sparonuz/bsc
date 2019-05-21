@@ -234,9 +234,8 @@ then
   do
     for j in `seq 0 $((PROC_PER_NODE-1))`
     do
-      echo -n ${hosts[$n_node]} " " >> machinefile
+      echo  ${hosts[$n_node]} " " >> machinefile
     done
-    echo " ">> machinefile
   done
   EXEC_CMD=$EXEC_CMD" -machinefile machinefile "
 fi
