@@ -224,11 +224,13 @@ EOF
   chmod 755 $trace
 fi
 
-EXEC_CMD="mpirun "
+EXEC_CMD=" mpirun -env I_MPI_DEBUG=6 "
 
 if [[ $machinef == True ]]
 then
+
   hosts=(`scontrol show hostname`)
+
   cat /dev/null > machinefile
   for n_node in `seq 0 $((${#hosts[@]}-1))`
   do
@@ -251,10 +253,11 @@ then
   fi
   EXEC_CMD=${EXEC_CMD}${XIOS_EXEC}
 fi
+
 exec_name=./$exec_name
+
 if [[ $EXTRAE == True ]]
 then 
-  #EXEC=" $EXEC_CMD -np $nemo_proc ./$trace ./$exec_name" 
   exec_name="./$trace  $exec_name"
 else
   if [[ $DDT == True ]] 
@@ -263,8 +266,6 @@ else
     EXEC_CMD="ddt --connect $EXEC_CMD"
   else
     EXEC_CMD="time "$EXEC_CMD
-    # export I_MPI_STATS=5
-    #EXEC="time mpirun -bind-to core  -env I_MPI_DEBUG=6 $XIOS_EXEC -np $nemo_proc ./$exec_name "
   fi 
 fi
 
